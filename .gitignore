@@ -1,0 +1,29 @@
+# Full raw data, never goes to a public repo
+/data/bus_delays_sample.csv
+/data/df_model_delay.csv
+/data/transport_data.db
+/data/transport_data_clean.db
+/data/gtfs_dl/
+
+# Logs from the collection scripts
+/logs/
+
+# Legacy local-only presentation source (Keynote, etc.)
+/presentation/
+*.key
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS junk
+.DS_Store

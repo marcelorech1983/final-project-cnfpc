@@ -1,0 +1,2767 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predicting Bus Delays in Luxembourg</title>
+
+<style>
+    /* =========================================================
+       Clean theme + TV mode (valid CSS)
+       Replace your whole main <style> block with this one.
+       ========================================================= */
+
+    :root{
+      /* Colors */
+      --bg: #0b1220;
+      --fg: #f6f7fb;
+      --muted: rgba(246,247,251,0.78);
+      --panel: rgba(255,255,255,0.06);
+      --panel-strong: rgba(255,255,255,0.10);
+
+      /* Accents (Luxembourg-inspired) */
+      --accent:  #e11d48;  /* red */
+      --accent2: #38bdf8;  /* light blue */
+      --shadow: 0 18px 60px rgba(0,0,0,0.45);
+
+      /* Typography */
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+
+      /* Base type scale (works on laptops too) */
+      --t-title: clamp(2.2rem, 3.6vw, 3.4rem);
+      --t-subtitle: clamp(1.10rem, 1.6vw, 1.45rem);
+      --t-body: clamp(0.98rem, 1.15vw, 1.08rem);
+      --t-caption: 0.95rem;
+      --t-footnote: 0.85rem;
+
+      /* Layout */
+      --slide-pad: clamp(18px, 2.4vw, 44px);
+      --radius: 22px;
+
+      /* 2-col defaults (text | charts) */
+      --col-left: 0.72fr;
+      --col-right: 1.28fr;
+
+      /* Content width */
+      --content-max: 1480px;
+
+      /* “Main chart area” height used by many slides */
+      --chart-h: clamp(520px, 56vh, 690px);
+    }
+
+    /* =========================================================
+       TV MODE
+       Turn on with: <body class="theme-tv">
+       ========================================================= */
+    body.theme-tv{
+      /* Slightly brighter background (better in a classroom) */
+      --bg: #0f172a;
+      --muted: rgba(246,247,251,0.86);
+      --panel: rgba(255,255,255,0.08);
+      --panel-strong: rgba(255,255,255,0.14);
+
+      /* TV-friendly type scale (big but not overflowing) */
+      --t-title: clamp(2.35rem, 3.9vw, 3.55rem);
+      --t-subtitle: clamp(1.18rem, 1.85vw, 1.55rem);
+      --t-body: clamp(1.05rem, 1.25vw, 1.18rem);
+      --t-caption: 1.02rem;
+      --t-footnote: 0.92rem;
+
+      /* Use a bit less padding to gain vertical chart space */
+      --slide-pad: clamp(16px, 2.1vw, 42px);
+
+      /* Wider content on big screens */
+      --content-max: 1600px;
+
+      /* Give charts more height (helps legends / stacked charts) */
+      --chart-h: clamp(560px, 60vh, 780px);
+    }
+
+    /* TV helper tweaks */
+    body.theme-tv .footer .bar{ height: 4px; }
+    body.theme-tv .hint{ font-size: 0.95rem; }
+    body.theme-tv .data-table thead th{ font-size: var(--t-caption); }
+    body.theme-tv .data-table tbody td{ font-size: var(--t-body); }
+    body.theme-tv .kpi .label,
+    body.theme-tv .kpi-pill{ font-size: var(--t-caption); }
+    body.theme-tv .mono{ font-size: var(--t-caption); }
+    body.theme-tv .speaker-notes{
+      width: 100%;
+      max-width: none;
+      font-size: var(--t-body);
+      line-height: 1.40;
+    }
+
+    /* Utility: a simple vertical stack for any column (no fixed height) */
+    .col-stack{
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .push-bottom{ margin-top: auto; }
+
+    /* Prevent footer / content bleeding into the next slide */
+    .slide{ overflow: hidden; }
+
+      /* Agenda layout */
+    .agenda{
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+      max-width: 70ch;
+    }
+    .agenda-item{
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .agenda-item strong{
+      color: var(--fg);
+      font-weight: 650;
+    }
+    .agenda-item span{
+      color: var(--muted);
+    }
+    .agenda-kpi{
+      margin-top: 10px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .kpi-pill{
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(246,247,251,0.82);
+      font-size: 0.92rem;
+    }
+
+
+    html, body{
+      height:100%;
+      margin:0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+    }
+
+    /* Global: make right column (charts) bigger and align columns */
+    .balance-grid, .quality-grid, .eda-grid, .schema-grid, .source-grid{
+      grid-template-columns: var(--col-left) var(--col-right);
+      align-items: stretch;
+    }
+
+    /* Slide layouts: 2 columns that stretch equally */
+    .layout-2col{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: var(--col-left) var(--col-right);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+/* ✅ Row-aligned columns (top box, bottom box, note) */
+.col-grid{
+  display: grid;
+  grid-template-rows: 1fr 1fr auto;
+  gap: 14px;
+  height: var(--chart-h);
+}
+
+/* Fill chart containers to row height */
+.chart-shell.fill{ height: 100%; }
+.chart-frame.fill{ height: 100% !important; width: 100%; border: 0; display:block; }
+
+
+    /* Reusable: two columns that align top + bottom */
+    .layout-2col{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: var(--col-left) var(--col-right);
+      gap: 18px;
+      align-items: stretch;        /* ✅ forces equal-height columns */
+    }
+
+    /* Each column becomes a full-height stack */
+    .col-stack{
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: var(--chart-h);      /* ✅ makes both sides the same height */
+    }
+
+    /* Anything with this class goes to the bottom (footer note alignment) */
+    .push-bottom{
+      margin-top: auto;            /* ✅ pins to bottom */
+    }
+
+    /* Two charts stacked to fill the chart area cleanly */
+    .chart-frame--half{
+      height: calc((var(--chart-h) - 14px) / 2);  /* 14px = gap between charts */
+    }
+
+
+    /* Standard chart height */
+    .chart-frame--eda{ height: var(--chart-h); }
+
+    /* Left column: keep boxes aligned top/bottom next to the chart */
+    .left-col-stack{
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: var(--chart-h);
+    }
+    .left-col-stack .small-note{
+      margin-top: auto; /* pins the note to the bottom */
+    }
+
+
+
+    /* Deck: vertical scroll-snap (simple + robust offline) */
+    .deck{
+      height: 100vh;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .slide{
+      height: 100vh;
+      scroll-snap-align: start;
+      position: relative;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    .slide-inner{
+      padding: var(--slide-pad);
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      max-width: var(--content-max);
+      width: calc(100% - 2 * var(--slide-pad));
+      margin: 0 auto;
+      z-index: 2;
+    }
+
+    .title{
+      font-size: var(--t-title);
+      letter-spacing: -0.02em;
+      line-height: 1.06;
+      margin: 0;
+    }
+    .subtitle{
+      font-size: var(--t-subtitle);
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.35;
+      max-width: 62ch;
+    }
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      width: fit-content;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      font-size: var(--t-caption);
+      color: var(--muted);
+    }
+    .badge .dot{
+      width: 10px; height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .footer{
+      padding: 18px var(--slide-pad);
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      color: rgba(246,247,251,0.70);
+      font-size: var(--t-footnote);
+      z-index: 2;
+    }
+    .footer .line{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .footer .bar{
+      height: 2px;
+      flex: 1;
+      background: rgba(246,247,251,0.12);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .footer .bar::after{
+      content:"";
+      display:block;
+      height: 100%;
+      width: var(--progress, 24%);
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* Slide variants */
+    .slide--title{
+      --bg-image: url("assets/img/title-bg.jpg"); /* replace file */
+      background:
+        linear-gradient(120deg, rgba(11,18,32,0.86), rgba(11,18,32,0.55)),
+        radial-gradient(1000px 600px at 10% 10%, rgba(56,189,248,0.18), transparent 55%),
+        radial-gradient(1000px 600px at 90% 20%, rgba(225,29,72,0.16), transparent 55%),
+        var(--bg-image);
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* For dense slides: top-align content so nothing gets cut */
+    .slide-inner--top{
+      align-content: start;
+      padding-top: calc(var(--slide-pad) * 0.9);
+    }
+
+    /* Slide 7: stacked charts sizing */
+    .chart-frame--mid{ height: 260px; }  /* smaller so the note fits */
+
+    /* Notes (toggle with N) */
+    .speaker-notes{
+      display:none;
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(246,247,251,0.86);
+      font-size: 0.98rem;
+      line-height: 1.45;
+      width: 100%;
+      max-width: none;
+    }
+    body.show-notes .speaker-notes{ display:block; }
+
+    /* Small helper for on-screen navigation hint */
+    .hint{
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(246,247,251,0.75);
+      font-size: 0.86rem;
+      z-index: 3;
+      user-select: none;
+    }
+
+    /* Print/PDF friendly */
+    @media print{
+      .deck{ height:auto; overflow: visible; }
+      .slide{ height: auto; page-break-after: always; }
+      .hint{ display:none; }
+      .speaker-notes{ display:none !important; }
+    }
+    /* Slide 3 layout */
+    .two-col{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .card{
+      padding: 18px 18px;
+      border-radius: var(--radius);
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .card h3{
+      margin: 0 0 8px 0;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+    .card p{
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: var(--t-body);
+    }
+    .card ul{
+      margin: 10px 0 0 18px;
+      color: rgba(246,247,251,0.82);
+      line-height: 1.5;
+      font-size: var(--t-body);
+    }
+    .card ul li{ margin: 6px 0; }
+    .kpi-grid{
+      display: grid;
+      gap: 12px;
+    }
+    .kpi{
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .kpi .label{
+      display:block;
+      color: rgba(246,247,251,0.70);
+      font-size: 0.92rem;
+      margin-bottom: 6px;
+    }
+    .kpi .value{
+      display:block;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+    .kpi .hint{
+      display:block;
+      margin-top: 6px;
+      color: rgba(246,247,251,0.72);
+      font-size: 0.92rem;
+      position: static; /* override the bottom-right hint bubble */
+      padding: 0;
+      background: none;
+      border: none;
+    }
+
+    /* Slide 4: data pipeline */
+    .source-grid{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .callout{
+      padding: 18px 18px;
+      border-radius: var(--radius);
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .callout h3{
+      margin: 0 0 8px 0;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+    .callout p{
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: var(--t-body);
+    }
+    .callout ul{
+      margin: 10px 0 0 18px;
+      color: rgba(246,247,251,0.84);
+      line-height: 1.5;
+      font-size: var(--t-body);
+    }
+    .callout li{ margin: 6px 0; }
+
+    .pipeline{
+      padding: 18px 18px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .pipeline-title{
+      margin: 0 0 12px 0;
+      color: rgba(246,247,251,0.86);
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+    .steps{
+      display: grid;
+      gap: 12px;
+    }
+    .step{
+      position: relative;
+      padding: 14px 14px 14px 52px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .step::before{
+      content: attr(data-n);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: rgba(11,18,32,0.95);
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .step h4{
+      margin: 0 0 4px 0;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+    .step p{
+      margin: 0;
+      color: rgba(246,247,251,0.76);
+      font-size: 0.96rem;
+      line-height: 1.45;
+    }
+    .step + .step{
+      margin-top: 2px;
+    }
+    .steps .arrow{
+      height: 12px;
+      display: grid;
+      place-items: center;
+      color: rgba(246,247,251,0.55);
+      font-size: 1rem;
+      user-select: none;
+    }
+    .tag-row{
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tag{
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(246,247,251,0.78);
+      font-size: 0.92rem;
+    }
+
+    /* Slide 5: schema + scale */
+    .schema-grid{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.35fr 0.95fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .data-table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .data-table thead th{
+      text-align: left;
+      font-size: 0.95rem;
+      color: rgba(246,247,251,0.82);
+      padding: 14px 14px;
+      background: rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .data-table tbody td{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      vertical-align: top;
+      color: rgba(246,247,251,0.80);
+      font-size: 0.98rem;
+      line-height: 1.35;
+    }
+    .data-table tbody tr:last-child td{ border-bottom: none; }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95rem;
+      color: rgba(246,247,251,0.86);
+    }
+
+    .side-stack{
+      display: grid;
+      gap: 14px;
+    }
+    .small-note{
+      margin-top: 10px;
+      color: rgba(246,247,251,0.72);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    /* Slide 6: target + class balance */
+    .balance-grid{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .chart-shell{
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      overflow: hidden;
+      padding: 8px;
+    }
+    .chart-frame{
+      width: 100%;
+      height: var(--chart-h);
+      border: 0;
+      display: block;
+      background: transparent;
+    }
+
+    /* Slide 7: quality & outliers */
+    .quality-grid{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr; /* give charts more width */
+      gap: 18px;
+      align-items: start;
+    }
+    .chart-stack{
+      display: grid;
+      gap: 14px;
+    }
+
+    .chart-frame--mid{
+      height: 290px; /* two charts stacked */
+    }
+    .check-table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .check-table th, .check-table td{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
+      vertical-align: top;
+    }
+    .check-table th{
+      background: rgba(255,255,255,0.08);
+      color: rgba(246,247,251,0.84);
+      font-size: 0.95rem;
+    }
+    .check-table td{
+      color: rgba(246,247,251,0.80);
+      font-size: 0.98rem;
+      line-height: 1.35;
+    }
+    .check-table tr:last-child td{ border-bottom: none; }
+    .chart-frame--tall{ height: 560px; }
+
+    /* Slide 8: EDA hour-of-day */
+    .eda-grid{
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .chart-frame--eda{ height: 520px; }
+
+    /* Slide 9: make left & right perfectly aligned top/bottom */
+    .col-grid{
+      display: grid;
+      grid-template-rows: 1fr 1fr auto;
+      gap: 22px;
+      height: var(--chart-h);
+    }
+
+    .col-grid .chart-shell.fill{ margin-bottom: 2px; }
+
+
+    .chart-shell.fill{ height: 100%; }
+    .chart-frame.fill{ height: 100% !important; width: 100%; border: 0; display:block; }
+
+    /* Slide 10: route hotspot slide */
+    .chart-frame--routes{ height: 100% !important; } /* charts fill the row in col-grid */
+
+    /* Force consistent title sizing (overrides any inline title styles) */
+    .slide:not(.slide--title) .title{
+      font-size: var(--t-title) !important;
+    }
+    .slide--title .title{
+      font-size: var(--t-hero, var(--t-title)) !important;
+    }
+
+    /* =========================================================
+       FINAL OVERRIDES (wins against earlier duplicate rules)
+       ========================================================= */
+
+    /* Make column stacks flexible (prevents “bleed” to next slide on text-heavy pages) */
+    .col-stack{ height: auto !important; min-height: 0 !important; }
+    /* If you ever need fixed-height alignment, add: class="col-stack fixed" */
+    .col-stack.fixed{ height: var(--chart-h) !important; }
+
+    /* TV: slightly tighter vertical rhythm = more room for charts */
+    body.theme-tv .slide-inner{ gap: 14px; }
+    body.theme-tv .footer{ padding: 12px var(--slide-pad); }
+
+    /* Slide 6: donut chart looks too high → center it inside the card */
+    .slide[data-slide="6"] .chart-shell{
+      height: var(--chart-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The donut plot itself is shorter than other charts, so give it a fixed height */
+    .slide[data-slide="6"] .chart-shell .chart-frame{
+      height: 520px !important; /* if still off, try 560px or 480px */
+    }
+    /* --- Slide 2 (Agenda) layout upgrade --- */
+    .slide[data-slide="2"] .agenda{ max-width: none; }
+    .slide[data-slide="2"] .agenda-grid{
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .slide[data-slide="2"] .agenda-left{
+      display: grid;
+      gap: 12px;
+    }
+    .slide[data-slide="2"] .agenda-right{
+      display: grid;
+      gap: 12px;
+    }
+    .slide[data-slide="2"] .timebars{
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .slide[data-slide="2"] .timebar{
+      display: grid;
+      grid-template-columns: 140px 1fr 58px;
+      gap: 10px;
+      align-items: center;
+    }
+    .slide[data-slide="2"] .timebar .lbl{
+      color: rgba(246,247,251,0.86);
+      font-weight: 650;
+    }
+    .slide[data-slide="2"] .timebar .mins{
+      color: rgba(246,247,251,0.76);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .slide[data-slide="2"] .timebar .track{
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow: hidden;
+    }
+    .slide[data-slide="2"] .timebar .fill{
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+
+</style>
+
+</head>
+
+<body>
+  <body class="theme-tv">
+
+  <div class="deck" id="deck">
+
+    <!-- Slide 1: Title -->
+    <section class="slide slide--title" data-slide="1">
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Operations support • Delayed = ≥ 1 minute late</div>
+
+        <h1 class="title">Predicting Bus Delays in Luxembourg</h1>
+
+        <p class="subtitle">
+          Find when and where delays are most likely, so operators can adjust service and improve reliability.
+        </p>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈20–30s):</strong>
+          Hi, I’m <strong>Marcelo Rech</strong>. In this project, I predict whether a bus stop event will be
+          <strong>Delayed</strong> or <strong>On-time</strong>. I label an event as delayed when the bus is
+          <strong>at least 1 minute late</strong>.
+          The goal is practical: help operations teams spot high-risk situations—like certain times, routes, or conditions—
+          so they can make small changes that improve reliability for passengers.
+          I’ll show the data, the main patterns I found, the model results, and the key recommendations.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line">Marcelo Rech · Data Science Final Project · Luxembourg</div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 1 / 22</div>
+      </div>
+
+      
+    </section>
+
+
+    <!-- Slide 2: Agenda -->
+    <section class="slide" data-slide="2"
+      style="background:
+        radial-gradient(900px 500px at 18% 10%, rgba(56,189,248,0.14), transparent 55%),
+        radial-gradient(900px 500px at 82% 22%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Plan • What you will see • Main score: F1</div>
+
+        <h2 class="title" style="font-size: clamp(2rem, 3.3vw, 3rem); margin-bottom: 2px;">Agenda</h2>
+        <p class="subtitle">A simple path: problem → data → patterns → model → what to do with it.</p>
+
+        <div class="agenda-grid">
+          <div class="agenda-left">
+            <div class="agenda">
+              <div class="agenda-item"><strong>1) Problem and goal</strong> <span>Why delays matter, who benefits, and what “delayed” means (≥ 1 minute)</span></div>
+              <div class="agenda-item"><strong>2) Data and checks</strong> <span>Where the data comes from and how I checked if it is usable</span></div>
+              <div class="agenda-item"><strong>3) What I learned (EDA)</strong> <span>When and where delays happen more often (time, routes, stops, weather)</span></div>
+              <div class="agenda-item"><strong>4) Modeling</strong> <span>How I built the model and how I tested it fairly</span></div>
+              <div class="agenda-item"><strong>5) Results and next steps</strong> <span>Best model, trade-offs, and practical recommendations</span></div>
+            </div>
+
+            <div class="agenda-kpi">
+              <span class="kpi-pill">Target: Delayed vs On-time (≥ 1 minute)</span>
+              <span class="kpi-pill">Main score: F1</span>
+              <span class="kpi-pill">Also shown: Precision / Recall / ROC AUC</span>
+            </div>
+          </div>
+
+          <div class="agenda-right">
+            <div class="card">
+              <h3>Quick facts</h3>
+              <ul>
+                <li><strong>Target:</strong> <span class="mono">is_delayed</span> (Delayed ≥ 1 minute)</li>
+                <li><strong>Delay rate:</strong> about <strong>36%</strong> delayed overall</li>
+                <li><strong>Dataset size:</strong> ≈ <strong>7.36M</strong> stop events</li>
+                <li><strong>Data window:</strong> Jul 25 – Sep 16, 2025 (<span class="mono">collected_at</span>)</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Time plan (20 minutes)</h3>
+              <div class="timebars">
+                <div class="timebar">
+                  <div class="lbl">Problem</div>
+                  <div class="track"><div class="fill" style="width: 10%;"></div></div>
+                  <div class="mins">2m</div>
+                </div>
+                <div class="timebar">
+                  <div class="lbl">Data</div>
+                  <div class="track"><div class="fill" style="width: 20%;"></div></div>
+                  <div class="mins">4m</div>
+                </div>
+                <div class="timebar">
+                  <div class="lbl">EDA</div>
+                  <div class="track"><div class="fill" style="width: 35%;"></div></div>
+                  <div class="mins">7m</div>
+                </div>
+                <div class="timebar">
+                  <div class="lbl">Model</div>
+                  <div class="track"><div class="fill" style="width: 30%;"></div></div>
+                  <div class="mins">6m</div>
+                </div>
+                <div class="timebar">
+                  <div class="lbl">Wrap-up</div>
+                  <div class="track"><div class="fill" style="width: 5%;"></div></div>
+                  <div class="mins">1m</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈25–35s):</strong>
+          This is the plan for the presentation.
+          First, I explain the problem and the goal: support operations by spotting when delays are more likely.
+          Then I quickly describe the data and the basic checks to confirm it is reliable enough to use.
+          After that, I show the main patterns—like which hours, routes, and conditions have more delays.
+          Next, I explain the model and how I evaluate it. My main score is F1 because it balances precision and recall.
+          If you only remember one thing from this slide, it’s this: I go from the real problem to a model that leads to practical actions.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 2 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 3: Problem, impact, objective -->
+    <section class="slide" data-slide="3"
+      style="background:
+        radial-gradient(900px 520px at 14% 12%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(900px 520px at 86% 18%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Problem • Impact • Objective</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Why bus delays matter (and what I am trying to solve)
+        </h2>
+        <p class="subtitle">
+          Even small delays can break connections and reduce trust. The goal is to support operations with an early warning signal.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column: problem + impact -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>The problem</h3>
+              <ul>
+                <li>Buses do not always arrive on time.</li>
+                <li>Passengers feel it quickly: missed connections, longer trips, and less confidence in the service.</li>
+                <li>Operations teams often learn about issues <strong>after</strong> delays already build up.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                I want a simple, useful way to spot “higher risk” situations early.
+              </p>
+            </div>
+
+            <div class="card">
+              <h3>Why this is important</h3>
+              <ul>
+                <li><strong>Passenger experience:</strong> reliability matters as much as speed.</li>
+                <li><strong>Operations efficiency:</strong> better signals help prioritize attention.</li>
+                <li><strong>Planning:</strong> knowing patterns helps adjust schedules and resources.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Right column: objective + success -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>Project objective</h3>
+              <ul>
+                <li>Predict whether a stop event will be <strong>Delayed</strong> or <strong>On-time</strong>.</li>
+                <li><strong>Delayed</strong> means <strong>≥ 1 minute late</strong>.</li>
+                <li>Output is a probability so it can be used as a <strong>risk score</strong>, not just “yes/no”.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                Think of it as a “heads up” for dispatch and planning teams.
+              </p>
+            </div>
+
+            <div class="card">
+              <h3>What success looks like</h3>
+              <ul>
+                <li>Main score: <strong>F1</strong> (balances false alarms and missed delays).</li>
+                <li>I also show <strong>Precision</strong>, <strong>Recall</strong>, and <strong>ROC AUC</strong>.</li>
+                <li>Practical value: clear patterns and a simple threshold policy that ops can use.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                The goal is not “perfect prediction”. The goal is a model that helps make better decisions.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈60–75s):</strong>
+          On this slide I explain the “why”. Bus delays are not only a number—they affect real trips.
+          Even a small delay can break a connection or make passengers feel the service is not reliable.
+          For operations, the challenge is timing: it’s hard to act early if you only notice delays after they spread.
+
+          So the goal of this project is simple: predict “Delayed” versus “On-time” for each stop event.
+          I define delayed as at least one minute late. The model gives a probability, which I can treat like a risk score.
+          That is more useful than a strict yes/no.
+
+          For success, I use F1 as the main score because it balances two things:
+          catching real delays and avoiding too many false alerts. I also report precision, recall, and ROC AUC for context.
+          The main point here is: the model should lead to practical actions, not just a metric.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 3 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 4: Data source & pipeline overview -->
+    <section class="slide" data-slide="4"
+      style="background:
+        radial-gradient(1000px 520px at 10% 12%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 90% 18%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Data • Where it comes from • How I prepared it</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Data source and workflow
+        </h2>
+        <p class="subtitle">
+          One cleaned dataset is used for both analysis and modeling, so the numbers always match.
+        </p>
+
+        <div class="source-grid">
+          <!-- Left: narrative -->
+          <div style="display:grid; gap: 14px;">
+            <div class="callout">
+              <h3>What data I use</h3>
+              <ul>
+                <li><strong>Stop events:</strong> scheduled time vs actual time → delay in minutes</li>
+                <li><strong>Extra context:</strong> signals like weather to capture “bad conditions”</li>
+              </ul>
+              <p style="margin-top:10px;">
+                Important rule: I keep <strong>one cleaned dataset</strong> so EDA and modeling are consistent.
+              </p>
+            </div>
+
+            <div class="callout">
+              <h3>Why this matters</h3>
+              <ul>
+                <li>It prevents “EDA says one thing, model uses another dataset”.</li>
+                <li>It’s easier to explain and defend: every number has a clear source.</li>
+                <li>It makes the project repeatable (anyone can re-run the same steps).</li>
+              </ul>
+            </div>
+
+            <div class="tag-row" aria-label="Key guarantees">
+              <div class="tag">Same data everywhere</div>
+              <div class="tag">Easy to reproduce</div>
+              <div class="tag">Ready for ops use</div>
+            </div>
+          </div>
+
+          <!-- Right: pipeline diagram -->
+          <div class="pipeline">
+            <div class="pipeline-title">Workflow at a glance</div>
+
+            <div class="steps" aria-label="Project workflow steps">
+              <div class="step" data-n="1">
+                <h4>Get the data</h4>
+                <p>Extract with SQL and export a CSV for analysis.</p>
+              </div>
+              <div class="arrow">↓</div>
+
+              <div class="step" data-n="2">
+                <h4>Clean and check</h4>
+                <p>Fix types, check missing values, and review extreme delays.</p>
+              </div>
+              <div class="arrow">↓</div>
+
+              <div class="step" data-n="3">
+                <h4>Explore patterns (EDA)</h4>
+                <p>Look at delays by hour, day, route/stop, and conditions.</p>
+              </div>
+              <div class="arrow">↓</div>
+
+              <div class="step" data-n="4">
+                <h4>Create features</h4>
+                <p>Build useful columns (time bands, route context, weather flags).</p>
+              </div>
+              <div class="arrow">↓</div>
+
+              <div class="step" data-n="5">
+                <h4>Train and evaluate</h4>
+                <p>Compare models using F1, plus Precision/Recall and ROC AUC.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈60–75s):</strong>
+          This slide explains where the data comes from and how the project is organized.
+          I start with stop-event records, which contain scheduled and actual times. From that, I calculate the delay in minutes.
+          I also add a small amount of extra context, like weather, because conditions can affect traffic and travel time.
+
+          The most important point is consistency: I keep one cleaned dataset and use it everywhere.
+          That way, the patterns I show in EDA are based on the same data that the model learns from.
+          In practice, my workflow is: extract the data and export a CSV, clean it and check quality, explore the main patterns,
+          create features, and then train models. I evaluate with F1 as the main score, and I also show precision, recall, and ROC AUC.
+          The main point here is: every result in the deck comes from a clear and repeatable process.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 4 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 5: Dataset schema & scale -->
+    <section class="slide" data-slide="5"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Dataset overview • One row = one stop event</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Dataset schema and scale
+        </h2>
+        <p class="subtitle">
+          Each row is one bus stop event with a scheduled time and an observed time. With millions of rows, I can spot patterns and train models with confidence.
+        </p>
+
+        <div class="schema-grid">
+          <!-- Left: schema table -->
+          <div>
+            <table class="data-table" aria-label="Dataset schema table">
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Column</th>
+                  <th style="width: 18%;">Type</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">stop_id</td>
+                  <td>categorical</td>
+                  <td>Stop identifier (where the bus event happened)</td>
+                </tr>
+                <tr>
+                  <td class="mono">trip_id</td>
+                  <td>categorical</td>
+                  <td>Trip identifier (specific run of a bus line)</td>
+                </tr>
+                <tr>
+                  <td class="mono">planned_time</td>
+                  <td>datetime</td>
+                  <td>Scheduled arrival/departure time at the stop</td>
+                </tr>
+                <tr>
+                  <td class="mono">real_time</td>
+                  <td>datetime</td>
+                  <td>Observed arrival/departure time at the stop</td>
+                </tr>
+                <tr>
+                  <td class="mono">delay_minutes</td>
+                  <td>numeric</td>
+                  <td>Difference between real and planned time (minutes)</td>
+                </tr>
+                <tr>
+                  <td class="mono">collected_at</td>
+                  <td>datetime</td>
+                  <td>Timestamp when the observation was recorded</td>
+                </tr>
+                <tr>
+                  <td class="mono">operator</td>
+                  <td>categorical</td>
+                  <td>Operator/company running the service (some missing values)</td>
+                </tr>
+                <tr>
+                  <td class="mono">transport_type</td>
+                  <td>categorical</td>
+                  <td>Transport mode label (bus category in this dataset)</td>
+                </tr>
+                <tr>
+                  <td class="mono">route_id</td>
+                  <td>categorical</td>
+                  <td>Internal route identifier</td>
+                </tr>
+                <tr>
+                  <td class="mono">route_short_name</td>
+                  <td>categorical</td>
+                  <td>Public-facing line number/name</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="small-note">
+              <strong>Modeling label:</strong> <span class="mono">Delayed = (delay_minutes ≥ 1)</span>, otherwise On-time.
+            </div>
+          </div>
+
+          <!-- Right: scale + quality snapshot -->
+          <div class="side-stack">
+            <div class="kpi">
+              <span class="label">Scale</span>
+              <span class="value">7,356,700 stop events</span>
+              <span class="hint">Enough volume for stable EDA and modeling</span>
+            </div>
+
+            <div class="kpi">
+              <span class="label">Columns</span>
+              <span class="value">10 core fields</span>
+              <span class="hint">Time + route/stop + operator context</span>
+            </div>
+
+            <div class="kpi">
+              <span class="label">Missingness</span>
+              <span class="value">Operator: 6,059 missing (~0.08%)</span>
+              <span class="hint">Filled as “Unknown” so I keep all rows</span>
+            </div>
+
+            <div class="card">
+              <h3>Why this dataset is useful for operations</h3>
+              <ul>
+                <li><strong>Time coverage (collected_at):</strong> July 25, 2025 → September 16, 2025 (about 7–8 weeks)</li>
+                <li>I can compare reliability by <strong>time</strong> (hour, weekday, peak periods)</li>
+                <li>I can compare reliability by <strong>network</strong> (route and stop)</li>
+                <li>I can compare reliability by <strong>operator</strong> (different service providers)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈60–75s):</strong>
+          This is the base dataset used for the whole project.
+          Each row represents one stop event: I have the planned time and the real observed time.
+          The delay in minutes is simply the difference between those two timestamps.
+          The dataset is large — over 7 million stop events — which is great because it makes the patterns more reliable.
+          In terms of data quality, almost every column is complete. The only meaningful missing field is the operator name,
+          and that happens in about 6 thousand rows, which is less than 0.1%.
+          I replaced those missing operator values with “Unknown” so I keep every observation.
+          From an operations point of view, this schema is practical because it lets us slice delay risk by time, by route/stop, and by operator.
+          And for modeling, I simplify the problem into a clear label: delayed if it is at least 1 minute late, otherwise on-time.
+          All records were collected between July 25 and September 16, 2025, so the analysis reflects about 7 to 8 weeks of operations.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 5 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 6: Target definition and baseline class balance -->
+    <section class="slide" data-slide="6"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Target • Class balance • Why F1 matters</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          What I predict: delayed vs on-time (and how common each one is)
+        </h2>
+        <p class="subtitle">
+          For each stop event, the model predicts one of two outcomes: <strong>Delayed</strong> or <strong>On-time</strong>.
+        </p>
+
+        <div class="balance-grid">
+          <!-- Left: definition + why it matters -->
+          <div style="display:grid; gap: 14px;">
+            <div class="card">
+              <h3>Target (label) definition</h3>
+              <ul>
+                <li><strong>Delayed</strong> = bus is <strong>1 minute late or more</strong></li>
+                <li><strong>On-time</strong> = bus is <strong>less than 1 minute late</strong></li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                I use 1 minute as a clear and simple rule that matches how I talk about reliability.
+              </p>
+            </div>
+
+            <div class="card">
+              <h3>Why the class balance matters</h3>
+              <ul>
+                <li>Most events are <strong>On-time (~64%)</strong>.</li>
+                <li>A large part are still <strong>Delayed (~36%)</strong>.</li>
+                <li>If I only used <strong>accuracy</strong>, I could get a “good” score by guessing On-time too often.</li>
+                <li>So I use <strong>F1</strong> as the main score: it balances <strong>catching delays</strong> and <strong>avoiding too many false alarms</strong>.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                I also report Precision, Recall, and ROC AUC to give extra context.
+              </p>
+            </div>
+
+            <div class="kpi-grid">
+              <div class="kpi">
+                <span class="label">Baseline delayed share</span>
+                <span class="value">35.98% delayed</span>
+                <span class="hint">On-time: 64.02%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: chart -->
+          <div>
+            <div class="chart-shell">
+              <iframe class="chart-frame"
+                      src="../figures/class_balance.html"
+                      title="Class balance: delayed vs on-time"
+                      scrolling="no"></iframe>
+            </div>
+            <div class="small-note">
+              Chart source: value counts of <code>is_delayed</code> (Delayed ≥ 1 minute).
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          On this slide I lock in the exact definition of the target.
+          For every stop event, I label it as <strong>Delayed</strong> if it is <strong>1 minute late or more</strong>.
+          Otherwise, it is <strong>On-time</strong>.
+          <br><br>
+          The donut chart shows the mix in the dataset: about <strong>64% on-time</strong> and <strong>36% delayed</strong>.
+          That means delays are not rare, but on-time is still the bigger group.
+          <br><br>
+          This is important for evaluation. If I only used <strong>accuracy</strong>, a model could look “good” just by predicting
+          on-time too often. Instead, I use <strong>F1</strong> as the main metric because it balances two needs:
+          <strong>catching real delays</strong> and <strong>not creating too many false alerts</strong>.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 6 / 22</div>
+      </div>
+    </section>
+
+
+
+    <!-- Slide 7: Data quality & outliers -->
+    <section class="slide" data-slide="7"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Data quality • Delay sizes • Rare extreme events</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Most delays are small, but a few are very large
+        </h2>
+        <p class="subtitle">
+          Before modeling, I check missing values and I look at the delay distribution to understand what “normal” looks like.
+        </p>
+
+        <div class="quality-grid">
+          <!-- Left -->
+          <div style="display:grid; gap: 14px;">
+            <div class="card">
+              <h3>Main messages</h3>
+              <ul>
+                <li>Data is <strong>mostly complete</strong> (no major missing-value problem).</li>
+                <li><strong>Typical delays are short</strong>: most are close to 0–2 minutes.</li>
+                <li>Percentiles help summarize this safely: <strong>P95 ≈ 5 min</strong> and <strong>P99 ≈ 9 min</strong>.</li>
+                <li>There is also a <strong>rare tail</strong> (15+ minutes). These look like <strong>disruptions</strong> and should be monitored separately.</li>
+              </ul>
+            </div>
+
+            <table class="check-table" aria-label="Quality checks table">
+              <thead>
+                <tr>
+                  <th style="width:36%;">Check</th>
+                  <th style="width:34%;">What I saw</th>
+                  <th>Why it matters</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Missing values</strong></td>
+                  <td>Very small</td>
+                  <td>I can compare routes/operators without big data gaps.</td>
+                </tr>
+                <tr>
+                  <td><strong>Typical delay size</strong></td>
+                  <td>P95 ≈ 5 min, P99 ≈ 9 min</td>
+                  <td>Most delays are minor, so small operational fixes can help many trips.</td>
+                </tr>
+                <tr>
+                  <td><strong>Extreme delays</strong></td>
+                  <td>Rare but can be huge (chart capped at 75+)</td>
+                  <td>Averages can be misleading; treat rare extremes as disruption cases.</td>
+                </tr>
+                <tr>
+                  <td><strong>Target rule</strong></td>
+                  <td>Delayed = ≥ 1 minute</td>
+                  <td>Keeps EDA and modeling aligned and easy to explain.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="small-note">
+              On the right: the top chart shows the common range (0–15 min). The bottom chart zooms into rare long delays (15+ min).
+            </div>
+          </div>
+
+          <!-- Right -->
+          <div class="chart-stack">
+            <div class="chart-shell">
+              <iframe class="chart-frame chart-frame--mid"
+                      src="../figures/delay_hist_typical.html"
+                      title="Typical delays (0–15 minutes)"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="chart-shell">
+              <iframe class="chart-frame chart-frame--mid"
+                      src="../figures/delay_hist_tail.html"
+                      title="Tail delays (over 15 minutes)"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note">
+              Top: 0–15 min with P95/P99 markers. Bottom: >15 min tail, capped for readability.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          Before modeling, I do two quick checks: missing values and the size of delays.
+          <br><br>
+          First, missing values are very small, so the dataset is reliable enough to work with.
+          <br><br>
+          Second, I want to explain what a “normal” delay looks like.
+          In the top chart, most delays are very close to zero.
+          <br><br>
+          The two dashed lines are simple cutoffs:
+          <strong>P95 = 5 minutes</strong> means <strong>95 out of 100 delays are 5 minutes or less</strong>.
+          <strong>P99 = 9 minutes</strong> means <strong>99 out of 100 delays are 9 minutes or less</strong>.
+          <br><br>
+          So the main takeaway is: <strong>almost all delays are under 10 minutes</strong>.
+          The bottom chart shows the rare cases above 15 minutes.
+          These are uncommon, but they matter because they usually come from disruptions.
+        </aside>
+
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 7 / 22</div>
+      </div>
+    </section>
+
+
+
+    <!-- Slide 8: EDA — Delay risk by hour -->
+    <section class="slide" data-slide="8"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Time of day • When delays happen more</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Some hours have more delays than others
+        </h2>
+        <p class="subtitle">
+          This chart shows the <strong>share of stop events that are delayed</strong> for each planned hour.
+        </p>
+
+        <div class="eda-grid">
+          <!-- Left: simple interpretation -->
+          <div class="left-col-stack">
+            <div class="card">
+              <h3>How to read the chart</h3>
+              <ul>
+                <li>Each point = one hour of the day (00 to 23).</li>
+                <li>Y-axis = <strong>% of events delayed</strong> (Delayed = ≥ 1 minute).</li>
+                <li>The dashed line is the <strong>baseline</strong> (overall average).</li>
+                <li>Points above the dashed line = <strong>higher-than-usual risk</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>What I learn</h3>
+              <ul>
+                <li>Delay risk is <strong>higher in the morning and late afternoon</strong> (commute hours).</li>
+                <li>The chart marks the <strong>top risk hours</strong> (the red dots).</li>
+                <li>This is useful for operations: focus attention on these hours first.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                Think of this as a simple “when should I watch more closely?” signal.
+              </p>
+            </div>
+
+            <div class="small-note">
+              Metric shown: delayed share = <span class="mono">mean(is_delayed)</span> by planned hour.
+            </div>
+          </div>
+
+          <!-- Right: chart -->
+          <div>
+            <div class="chart-shell">
+              <iframe class="chart-frame chart-frame--eda"
+                      src="../figures/delayed_share_by_hour_B.html"
+                      title="Delayed share by planned hour"
+                      scrolling="no"></iframe>
+            </div>
+            <div class="small-note">
+              The dashed line is the baseline delayed share (overall average). Red points mark the highest-risk hours.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈50–70s):</strong>
+          Here I’m asking a simple question: <strong>does delay risk change during the day?</strong>
+          <br><br>
+          The y-axis is the percentage of stop events that are delayed, using the same rule as before:
+          <strong>Delayed means 1 minute late or more</strong>.
+          The dashed line is the baseline — the overall average delayed share.
+          <br><br>
+          You can see that some hours are clearly above baseline.
+          The chart highlights the top hours with red markers. These tend to happen around
+          <strong>the morning commute</strong> and <strong>late afternoon</strong>.
+          <br><br>
+          The key point is simple:
+          instead of treating every hour the same, operations can focus monitoring and small actions
+          during these higher-risk windows — for example, adding a bit of schedule buffer, closer dispatch attention,
+          or faster response when delays start to grow.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 8 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 9: EDA — Weekday & time-band patterns -->
+    <section class="slide" data-slide="9"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Weekday vs weekend • Time bands</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Weekends are slightly better, and evening peak is the riskiest band
+        </h2>
+        <p class="subtitle">
+          Same metric as before: <strong>delayed share</strong> (Delayed = ≥ 1 minute). Dashed line = overall baseline.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column (text) -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>What I see</h3>
+              <ul>
+                <li><strong>Weekdays are stable:</strong> Mon–Fri stay close to the baseline (around mid-30%).</li>
+                <li><strong>Weekend is lower:</strong> Saturday and especially Sunday have fewer delays.</li>
+                <li><strong>Time bands show bigger gaps:</strong> night is the lowest, and <strong>evening peak</strong> is the highest.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Why this matters</h3>
+              <ul>
+                <li>If you can only focus on one window, focus on <strong>evening peak</strong> first.</li>
+                <li>Weekday differences are small, so the bigger lever is <strong>time-of-day</strong>, not “which weekday”.</li>
+                <li>These patterns become useful features later: <strong>weekday</strong> and <strong>time band</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Charts show delayed share = <span class="mono">mean(is_delayed)</span>.
+            </div>
+          </div>
+
+          <!-- Right column (two charts stacked) -->
+          <div class="col-grid">
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill"
+                      src="../figures/delayed_share_by_weekday.html"
+                      title="Delayed share by weekday"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill"
+                      src="../figures/delayed_share_by_timeband.html"
+                      title="Delayed share by time band"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note push-bottom">
+              Dashed line = baseline delayed share (overall).
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈55–70s):</strong>
+          Here I group the same delay metric in two simple ways: by weekday and by time band.
+          On the weekday chart, the pattern is pretty stable. Most weekdays sit close to the baseline.
+          The weekend is a bit better, and Sunday is the lowest.
+          The time-band chart shows a clearer difference. Night has the lowest delayed share,
+          while midday and especially <strong>evening peak</strong> are higher than the baseline.
+          The key point is simple: weekday changes are small, but time-of-day changes are larger.
+          So operationally, it makes sense to focus extra attention during the evening peak.
+          And for modeling, weekday and time band are easy features that capture routine behavior.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 9 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 10: EDA — Route-level hotspots (easy English) -->
+    <section class="slide" data-slide="10"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Routes • Where delays happen more</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Some routes have more delays than others
+        </h2>
+        <p class="subtitle">
+          I rank routes by <strong>delayed share</strong> (Delayed = ≥ 1 minute). I only keep routes with many events so the ranking is fair.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>What this shows</h3>
+              <ul>
+                <li><strong>Worst routes:</strong> routes with the highest % of delayed events.</li>
+                <li><strong>Best routes:</strong> routes with the lowest % of delayed events (among high-volume routes).</li>
+                <li>The dashed line is the <strong>baseline</strong> (overall system average).</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>How to use this</h3>
+              <ul>
+                <li>Start with the worst routes: they are good candidates for a quick operational check.</li>
+                <li>Possible reasons: traffic, long boarding time, difficult segments, or peak-hour pressure.</li>
+                <li>Next slide (stops) helps pinpoint <strong>where</strong> the route problem is happening.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                This creates a short “priority list” instead of trying to fix everything at once.
+              </p>
+            </div>
+
+            <div class="small-note push-bottom">
+              Ranking metric: delayed share = <span class="mono">mean(is_delayed)</span>. I filter to high-volume routes to avoid noisy results.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-grid">
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill chart-frame--routes"
+                      src="../figures/worst_routes_B.html"
+                      title="Worst routes by delayed share"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill chart-frame--routes"
+                      src="../figures/best_routes_B.html"
+                      title="Best routes by delayed share"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note push-bottom">
+              Tip: low-volume routes are excluded so the “top/bottom” results are not driven by small samples.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈50–70s):</strong>
+          After looking at time patterns, I ask a new question: <strong>are some routes worse than others?</strong>
+          These two charts rank routes by the percent of stop events that are delayed.
+          The dashed line is the overall baseline across the system.
+          The top chart shows the <strong>worst routes</strong> — routes that are clearly above the baseline.
+          The bottom chart shows the <strong>best routes</strong> — a helpful reference for what good performance looks like.
+          To keep this fair, I only include routes with many events.
+          The key point is simple: if I want quick improvements, the worst routes are a good place to start.
+          And in the next slide, I zoom in further to see <strong>which stops</strong> are the main bottlenecks.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 10 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 11: EDA — Stop-level hotspots (rewritten in easy English) -->
+    <section class="slide" data-slide="11"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Stop hotspots • Where delays happen most</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Some stops are much “more likely to be delayed” than others
+        </h2>
+        <p class="subtitle">
+          I rank stops by <strong>delayed share</strong> (Delayed = ≥ 1 minute). I only keep stops with many events so the ranking is fair.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>What this shows</h3>
+              <ul>
+                <li><strong>Worst stops:</strong> stops with the highest % of delayed events.</li>
+                <li><strong>Best stops:</strong> stops with the lowest % of delayed events (among high-volume stops).</li>
+                <li>The dashed line is the <strong>baseline</strong> (overall system average).</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>How an operator can use this</h3>
+              <ul>
+                <li>Start with the worst stops: they are good candidates for a quick field check.</li>
+                <li>Look for common causes: heavy boarding, traffic lights, intersections, road works, school zones.</li>
+                <li>Compare worst vs best to learn what “good performance” looks like.</li>
+              </ul>
+              <p class="small-note" style="margin-top:10px;">
+                This slide is meant to create a short, practical “investigation list”.
+              </p>
+            </div>
+
+            <div class="small-note push-bottom">
+              Ranking metric: delayed share = <span class="mono">mean(is_delayed)</span>. I filter to high-volume stops to avoid noisy results.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-grid">
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill"
+                      src="../figures/worst_stops_B.html"
+                      title="Top worst stops by delayed share"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="chart-shell fill">
+              <iframe class="chart-frame fill"
+                      src="../figures/best_stops_B.html"
+                      title="Top best stops by delayed share"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note push-bottom">
+              Dashed line = overall baseline delayed share (system average).
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈50–70s):</strong>
+          Now that I understand time patterns, I zoom in on <strong>locations</strong>.
+          This slide ranks stops by the share of events that are delayed.
+          The top chart shows the <strong>worst stops</strong> — the ones with delay rates well above the baseline.
+          The bottom chart shows the <strong>best stops</strong> — a useful reference for what good looks like.
+          I only include stops with many events, so I don’t get “top 10” results caused by a small sample.
+          The main takeaway is simple: a small set of stops is a good place to start operational work.
+          These stops can be checked for typical causes like intersections, traffic signals, high boarding time,
+          or local congestion. This creates a short list of places where small fixes can help many trips.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 11 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 12: EDA — Operator differences (easy English) -->
+    <section class="slide" data-slide="12"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(168,85,247,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Operator view • Useful signal (with caution)</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Delay rates vary by operator — but this is not a “scoreboard”
+        </h2>
+        <p class="subtitle">
+          This is helpful for monitoring. But operators run different routes and areas, so I must compare carefully.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>What this chart answers</h3>
+              <ul>
+                <li>Are some operators <strong>above or below</strong> the overall baseline?</li>
+                <li>Which operators should I <strong>look at first</strong> for deeper investigation?</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>How to interpret it safely</h3>
+              <ul>
+                <li>Use it as a <strong>monitoring signal</strong>, not a final judgement.</li>
+                <li>Differences may happen because an operator serves <strong>harder routes</strong> or <strong>busier areas</strong>.</li>
+                <li>Best follow-up: compare operators <strong>on similar routes and time bands</strong>.</li>
+                <li><strong>“Unknown”</strong> usually means the operator value was missing in the data.</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Metric: delayed share = <span class="mono">mean(is_delayed)</span> (Delayed ≥ 1 min). Dashed line = overall baseline.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-grid">
+            <div class="chart-shell fill" style="grid-row: 1 / span 2;">
+              <iframe class="chart-frame fill"
+                      src="../figures/delayed_share_by_operator.html"
+                      title="Delayed share by operator"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note push-bottom">
+              Bars show delayed share; hover shows stop-event volume (n).
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈40–55s):</strong>
+          This slide looks at delays by operator.
+          The dashed line is the overall baseline, so bars to the right of it mean “more delays than average”,
+          and bars to the left mean “fewer delays than average”.
+          The important message is: this is a <strong>useful signal</strong>, but it is not a scoreboard.
+          Operators do not all work in the same conditions. One operator might run more peak-hour routes,
+          or serve areas with more traffic.
+          So if an operator is above the baseline, the next step is simple:
+          drill down to the same routes and the same time bands, and then check if the pattern still holds.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 12 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 13: EDA — Severity by time band (boxplot) -->
+    <section class="slide" data-slide="13"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Severity • How big delays get</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          When delays happen, some time bands have bigger delays
+        </h2>
+        <p class="subtitle">
+          Earlier I looked at <strong>how often</strong> delays happen. Here I look at <strong>how many minutes</strong> the delay is (only for delayed events).
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>How to read this chart</h3>
+              <ul>
+                <li>Each box shows the “typical” delay minutes for that time band.</li>
+                <li>The line inside the box is the <strong>middle</strong> delay value.</li>
+                <li>Longer whiskers and more dots mean <strong>more extreme delays</strong> can happen.</li>
+                <li>I only include <strong>delay ≥ 1 minute</strong> (so I focus on real delays).</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Why it matters</h3>
+              <ul>
+                <li>Operations care about both: <strong>how often</strong> delays happen and <strong>how big</strong> they get.</li>
+                <li>If a time band has bigger delays, it may need more attention (buffer time, faster response).</li>
+                <li>Rare big delays can come from disruptions (traffic, incidents, road works).</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Metric: <span class="mono">delay_minutes</span> for delayed events only (≥ 1). Y-axis is capped for readability.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-grid">
+            <div class="chart-shell fill" style="grid-row: 1 / span 2;">
+              <iframe class="chart-frame fill"
+                      src="../figures/delay_severity_by_timeband_boxplot.html"
+                      title="Delay severity by time band (boxplot)"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div class="small-note push-bottom">
+              Boxplots help us see typical delays and rare extreme delays.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈35–45s):</strong>
+          So far I measured “how often” delays happen. Now I look at “how big” delays get, in minutes, and only for events that are delayed (at least 1 minute). Each box shows the typical delay range for a time band, and the line inside is the middle value. The dots represent rare large delays. The main idea is that some time bands don’t just have more delays — they can also have bigger delays. This helps decide where adding a little buffer or faster dispatch response could reduce the most painful cases. The y-axis is capped so the chart stays readable.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 13 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 14: EDA — Correlation heatmap (overflow-safe, easy English) -->
+    <section class="slide" data-slide="14"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(168,85,247,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> EDA • Correlation • Quick overlap check</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Correlation heatmap: what moves together (and a quick leakage reminder)
+        </h2>
+        <p class="subtitle">
+          Correlation is a simple way to see which variables “travel together”. It helps spot overlap and obvious mistakes.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>How to read this</h3>
+              <ul>
+                <li>Each square compares two variables.</li>
+                <li>Values go from <strong>-1</strong> to <strong>+1</strong>.</li>
+                <li><strong>+1</strong> = they rise together, <strong>-1</strong> = one goes up while the other goes down.</li>
+                <li><strong>Near 0</strong> = no strong linear relationship.</li>
+                <li>Blue = positive, red = negative, gray ≈ near zero.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Key takeaways</h3>
+              <ul>
+                <li>Some features overlap a lot (example: the rain variables).</li>
+                <li>Calendar features also overlap (weekday vs weekend).</li>
+                <li>The target (<span class="mono">is_delayed</span>) has very small correlations here, so delays are not explained by one single numeric feature.</li>
+                <li><strong>Leakage reminder:</strong> I only use information known <strong>before</strong> the bus arrives (so not actual arrival timestamps like <span class="mono">real_time</span>).</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Note: low correlation does not mean “not useful”. It can miss non-linear patterns.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-grid">
+            <div class="chart-shell fill" style="grid-row: 1 / span 2;">
+              <iframe class="chart-frame fill"
+                      src="../figures/correlation_heatmap.html"
+                      title="Correlation heatmap (numeric/binary features + target)"
+                      scrolling="no"></iframe>
+            </div>
+            <div class="small-note push-bottom">
+              Blue = positive correlation, red = negative, gray ≈ near zero.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈35–45s):</strong>
+          This slide is a quick overlap check. Correlation tells us which variables move together. For example, the rain-related features are strongly related because they describe the same weather situation. Weekday and weekend also overlap because they are two views of the same calendar idea. The target correlations are very small here, which is realistic: delays usually come from a combination of factors, not one single number. Finally, this is also a leakage reminder: I must only use information available before the bus arrives, so I never use actual arrival time as a feature.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 14 / 22</div>
+      </div>
+    </section>
+
+
+
+    <!-- Slide 15: Modeling setup (features, encodings, split, leakage) — simplified English -->
+    <section class="slide" data-slide="15"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Modeling • What the model sees • Fair evaluation</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Modeling setup: what I use as inputs (and how I test fairly)
+        </h2>
+        <p class="subtitle">
+          I predict <strong>Delayed vs On-time</strong> (Delayed ≥ 1 min) using only information known <strong>before</strong> the bus reaches the stop.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left: feature groups table -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>Inputs to the model (13 features)</h3>
+
+              <table class="check-table" aria-label="Model feature groups and encodings">
+                <thead>
+                  <tr>
+                    <th style="width:26%;">Group</th>
+                    <th>Columns</th>
+                    <th style="width:28%;">How I handle it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Numeric</strong></td>
+                    <td class="mono">planned_hour, planned_weekday, rain, route_volume, stop_volume</td>
+                    <td>
+                      LR: <strong>scale numbers</strong> (StandardScaler)<br/>
+                      Trees (RF/GB): use as-is
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Binary</strong></td>
+                    <td class="mono">is_weekend, is_rainy, is_heavy_rain</td>
+                    <td>use as-is</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Small categories</strong></td>
+                    <td class="mono">operator (≈5), time_band (≈5)</td>
+                    <td><strong>One-hot</strong> (safe with new values)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Large IDs</strong></td>
+                    <td class="mono">stop_id (≈2494), route_id (≈589), route_short_name (≈568)</td>
+                    <td>
+                      LR baseline: <strong>not used</strong><br/>
+                      RF: <strong>OrdinalEncoder</strong> (unknown = -1)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="small-note">
+                Target: <span class="mono">is_delayed</span> (Delayed ≥ 1 minute). Dataset size ≈ <strong>7.36M rows</strong>.
+              </div>
+            </div>
+
+            <div class="small-note push-bottom">
+              Why this setup: I keep a simple baseline (Logistic Regression) and also test a stronger model that can use route/stop IDs carefully.
+            </div>
+          </div>
+
+          <!-- Right: split + imbalance + leakage -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>Train/test split (fair check)</h3>
+              <ul>
+                <li>I split data into <strong>train</strong> (learn) and <strong>test</strong> (final check).</li>
+                <li>I keep the <strong>same delayed rate</strong> in both sets (so the test is realistic).</li>
+                <li>Train: <span class="mono">5,885,360</span> rows • Test: <span class="mono">1,471,340</span> rows.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Because delayed is ~36%</h3>
+              <ul>
+                <li>Accuracy alone can be misleading, so our main score is <strong>F1</strong>.</li>
+                <li>I also report <strong>Precision</strong>, <strong>Recall</strong>, and <strong>ROC AUC</strong>.</li>
+                <li>I use <span class="mono">class_weight</span> so the model pays enough attention to delayed cases.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Leakage rules (must-follow)</h3>
+              <ul>
+                <li><strong>Leakage = cheating by accident.</strong> It happens when the model uses information that is only known after the stop happens.</li>
+                <li>So I never use “answer” columns like <span class="mono">delay_minutes</span> or <span class="mono">real_time</span>.</li>
+                <li>I only use schedule + context that I know in advance (time, operator, weather, demand proxies, IDs).</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          This slide is my “model contract”: what the model is allowed to use and how I evaluate it. The goal is to predict delayed versus on-time using only information I would know before the stop happens. I group features into numeric values, simple yes/no flags, small categories like operator and time band, and large ID fields like stop and route. For the baseline Logistic Regression, I keep it simple and interpretable, so I exclude the large ID fields. For the tree model, I can include IDs with an encoding that also handles unknown values. To test fairly, I split the data into train and test and keep the same delayed share in both. Because delayed is about 36%, accuracy can be misleading, so I use F1 as the main metric and support it with precision, recall, and ROC AUC. Finally, Leakage is when the model accidentally sees the answer. For example, if I use the real arrival time or the delay minutes, the prediction becomes unrealistic because I would not have that information before the bus arrives.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 15 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 16: Model benchmarking (easy English) -->
+    <section class="slide" data-slide="16"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Modeling • Compare models • Main score: F1</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Which model performs best for delay alerts?
+        </h2>
+        <p class="subtitle">
+          I compare a simple baseline to stronger tree models, and I choose the one with the best balance between missed delays and false alarms.
+        </p>
+
+        <div class="two-col" style="display:grid; grid-template-columns: 0.95fr 1.35fr; gap: 18px; align-items: stretch;">
+          <!-- Left -->
+          <div style="display:grid; gap: 14px;">
+            <div class="card">
+              <h3>How I compare (same test set)</h3>
+              <ul>
+                <li><strong>Target:</strong> Delayed vs On-time (Delayed ≥ 1 minute).</li>
+                <li><strong>Split:</strong> 80/20 stratified (same real delay rate in train and test).</li>
+                <li><strong>Main score:</strong> <strong>F1</strong> (balance of Precision and Recall).</li>
+                <li><strong>Also shown:</strong> Precision, Recall, and ROC AUC.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>What the scores mean (in plain words)</h3>
+              <ul>
+                <li><strong>Recall:</strong> out of all real delays, how many I catch.</li>
+                <li><strong>Precision:</strong> out of all alerts I raise, how many are real delays.</li>
+                <li><strong>F1:</strong> one number that balances Precision + Recall.</li>
+                <li><strong>ROC AUC:</strong> how well the model ranks “more risky” vs “less risky”.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Main takeaway</h3>
+              <ul>
+                <li><strong>Random Forest is the top performer</strong> (best overall F1 and ROC AUC).</li>
+                <li><strong>Undersampled train</strong> vs <span class="mono">class_weight</span>: results are close. Undersampling can catch slightly more delays, but may add more false alarms.</li>
+                <li>The Logistic Regression baseline is much lower, so the pattern is not just a simple linear rule.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Right -->
+          <div class="chart-shell" style="height: 280px;">
+            <iframe class="chart-frame chart-frame--tall"
+                    style="height: 520px;"
+                    src="../figures/model_comparison_table.html"
+                    title="Model comparison table"
+                    scrolling="no"></iframe>
+            <div class="small-note">
+              Highlighted row = best F1 on the test set.
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          Here I compare different models on the same test set. Because delays are only around one third of the data, accuracy can look good even when the model is not useful, so I focus on F1. F1 is a balance between precision and recall. Recall tells me how many real delays I catch, and precision tells me how many of my alerts are actually true delays. In the table, the tree models perform much better than the simple Logistic Regression baseline. The Random Forest is the best overall, and the two training options (undersampling and class_weight) are quite close. Next, I take the best model and choose a probability threshold, because operations need a clear yes/no alert.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 16 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 17: Threshold + confusion matrix (simpler text + footer-safe sizing) -->
+    <section class="slide" data-slide="17"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <!-- Reduced padding/gap on this slide so the footer stays visible -->
+      <div class="slide-inner slide-inner--top"
+          style="gap: 14px; padding: clamp(20px, 2.6vw, 44px) var(--slide-pad);">
+
+        <div class="badge"><span class="dot"></span> Modeling • Threshold choice • Confusion matrix</div>
+
+        <h2 class="title" style="font-size: clamp(2.0rem, 3.1vw, 3.0rem); margin-bottom: 2px;">
+          Turning model probability into a clear “Delay alert”
+        </h2>
+        <p class="subtitle">
+          The model gives a probability. I choose a threshold to decide when to flag <strong>Delayed</strong> vs <strong>On-time</strong> (Delayed ≥ 1 min).
+        </p>
+
+        <div style="display:grid; grid-template-columns: 0.45fr 0.55fr; gap: 16px; align-items: stretch;">
+          <!-- Left column -->
+          <div style="display:flex; flex-direction:column; gap: 14px;">
+            <div class="card">
+              <h3>What the top chart means</h3>
+              <ul>
+                <li><strong>Lower threshold</strong> → I catch more delays (higher <strong>Recall</strong>), but I also create more false alarms.</li>
+                <li><strong>Higher threshold</strong> → fewer false alarms (higher <strong>Precision</strong>), but I miss more real delays.</li>
+                <li>I choose the threshold that gives the best balance using <strong>F1</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Chosen point (best F1)</h3>
+              <ul>
+                <li><strong>Best F1 threshold ≈ 0.46</strong> (from the chart).</li>
+                <li><strong>Recall ≈ 0.83</strong> → I catch about <strong>83%</strong> of real delays.</li>
+                <li><strong>Precision ≈ 0.51</strong> → about <strong>half</strong> of our alerts are true delays.</li>
+                <li>This is adjustable later, depending on how costly false alarms vs missed delays are.</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Simple idea: choose a threshold that matches operational reality (how much I hate false alarms vs missed delays).
+            </div>
+          </div>
+
+          <!-- Right column (charts) -->
+          <div style="display:flex; flex-direction:column; gap: 10px;">
+            <!-- Top chart (taller so labels are not clipped) -->
+            <!-- Top chart -->
+            <div class="chart-shell" style="height: 360px;">
+              <iframe
+                src="../figures/rf_threshold_tradeoff.html"
+                title="Threshold trade-off (Precision/Recall/F1)"
+                scrolling="no"
+                style="width:100%; height:100%; border:0; display:block;"></iframe>
+            </div>
+
+            <!-- Bottom chart -->
+            <div class="chart-shell" style="height: 380px;">
+              <iframe
+                src="../figures/rf_confusion_matrix.html"
+                title="Confusion matrix at chosen threshold"
+                scrolling="no"
+                style="width:100%; height:100%; border:0; display:block;"></iframe>
+            </div>
+
+
+
+            <div class="small-note">
+              Practical note: I can tune the threshold later based on the cost of false alarms vs missed delays.
+            </div>
+          </div>
+
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈60–75s):</strong>
+          The Random Forest does not output “Delayed” or “On-time” directly — it outputs a probability. This slide shows how I turn that probability into a clear alert by choosing a threshold. In the top chart, if I lower the threshold, I catch more real delays, but I also raise more false alarms. If I raise the threshold, I reduce false alarms, but I miss more true delays. I pick the threshold that gives the best balance using F1, which happens around 0.46 here. At this point, recall is about 0.83, meaning I catch roughly 83% of real delays, and precision is about 0.51, meaning around half of our alerts are real. The confusion matrix at the bottom turns this into counts, which is helpful for operations. And if the business later prefers fewer false alarms or fewer missed delays, I can move the threshold up or down.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 17 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 18: ROC + PR curves (simplified + easy to explain) -->
+    <section class="slide" data-slide="18"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Modeling • Validation • ROC & PR curves</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Do the predictions separate delayed vs on-time well?
+        </h2>
+        <p class="subtitle">
+          These curves check if the model is truly useful, not just at one threshold. (Delayed = ≥ 1 minute.)
+        </p>
+
+        <div style="display:grid; grid-template-columns: 0.42fr 0.58fr; gap: 16px; align-items: stretch;">
+          <!-- Left column -->
+          <div style="display:flex; flex-direction:column; gap: 14px;">
+            <div class="card">
+              <h3>ROC curve (top) — “ranking test”</h3>
+              <ul>
+                <li>ROC asks: can the model rank delayed trips above on-time trips?</li>
+                <li>The dashed diagonal is <strong>random guessing</strong>.</li>
+                <li>Curves closer to the <strong>top-left</strong> are better.</li>
+                <li><strong>AUC</strong> is a summary score: <strong>0.5 = random</strong>, <strong>1.0 = perfect</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Precision–Recall (bottom) — better for imbalance</h3>
+              <ul>
+                <li>Because delays are ~36% of events, PR is often more realistic than ROC.</li>
+                <li>The dashed line is the <strong>baseline</strong> (what you get by guessing “delay” at the same rate as the data).</li>
+                <li>PR shows the trade-off: if I try to catch more delays (<strong>higher recall</strong>), precision usually drops (more false alarms).</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Simple takeaway: both curves sit clearly above the baseline → the model can prioritize “riskier” stop events.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div style="display:flex; flex-direction:column;">
+            <div class="chart-shell" style="height: 340px;">
+              <iframe class="chart-frame"
+                      src="../figures/rf_roc_curve.html"
+                      title="ROC curve"
+                      scrolling="no"></iframe>
+            </div>
+
+            <div style="height: 14px;"></div>
+
+            <div class="chart-shell" style="height: 360px;">
+              <iframe class="chart-frame"
+                      src="../figures/rf_pr_curve.html"
+                      title="Precision-Recall curve"
+                      scrolling="no"></iframe>
+            </div>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          This slide checks if the model is genuinely useful, not just at one chosen threshold. The ROC curve is a simple “ranking test”: if I pick one delayed event and one on-time event, does the model usually give a higher score to the delayed one? The dashed line is random guessing, and the more the curve bends toward the top-left, the better. The PR curve is more practical here because delays are not 50/50. The dashed PR line is the baseline delay rate, so anything above it is better than guessing. PR also shows a real operational trade-off: if I push recall higher to catch more delays, precision usually drops, meaning more false alarms. That’s why I chose a threshold on the previous slide.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 18 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 19: Interpretability — Feature importance (easy English) -->
+    <section class="slide" data-slide="19"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner">
+        <div class="badge"><span class="dot"></span> Modeling • Interpretability • What the model uses most</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          What information does the model rely on most?
+        </h2>
+        <p class="subtitle">
+          This chart ranks features by importance inside the Random Forest. Bigger bars mean the model used that feature more.
+        </p>
+
+        <div style="display:grid; grid-template-columns: 0.40fr 0.60fr; gap: 16px; align-items: stretch;">
+          <!-- Left -->
+          <div style="display:flex; flex-direction:column; gap: 14px;">
+            <div class="card">
+              <h3>How to read this</h3>
+              <ul>
+                <li>Importance is a <strong>relative score</strong>: features add up to 100%.</li>
+                <li>Higher importance means the feature helped the model make better splits/predictions.</li>
+                <li>This is <strong>not proof of cause</strong>. It only tells us what is useful for prediction.</li>
+                <li>If two features are similar, they can <strong>share</strong> importance.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Simple takeaway from our results</h3>
+              <ul>
+                <li><strong>Demand/location signals</strong> (like stop volume and stop/route identifiers) matter the most.</li>
+                <li><strong>Time features</strong> (hour/weekday/time band) matter, but less than the location signals.</li>
+                <li><strong>Weather</strong> features are present, but they contribute a smaller share here.</li>
+                <li>Operational meaning: focus first on <strong>busy stops and specific routes</strong> when looking for improvements.</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Tip: ID features help prediction, but they are “where” signals. For action, I still need to inspect the real causes on those routes/stops.
+            </div>
+          </div>
+
+          <!-- Right -->
+          <div class="chart-shell" style="height: 520px;">
+            <iframe class="chart-frame"
+                    src="../figures/rf_feature_importance.html"
+                    title="Random Forest feature importance (aggregated)"
+                    scrolling="no"></iframe>
+          </div>
+        </div>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈45–60s):</strong>
+          This slide answers a simple question: what information does the model use the most to predict delays? The bars are feature importance scores from the Random Forest. A bigger bar means that feature helped the model more during prediction. This is not “cause and effect”, it is “usefulness for prediction”. In our case, demand and location signals stand out, like stop volume and stop/route identifiers. Time features also help, because delays follow daily patterns, but they are not the strongest drivers by themselves. Weather features show up, but they contribute less here. The practical message is: if I want to improve reliability, the first places to investigate are busy stops and specific routes where delay risk concentrates.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 19 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 20: Recommendations (simpler, more concrete) -->
+    <section class="slide" data-slide="20"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Recommendation • How to use the model</div>
+
+        <h2 class="title" style="font-size: clamp(2.1rem, 3.4vw, 3.2rem); margin-bottom: 2px;">
+          Recommendation: use the model as a “risk list” for daily operations
+        </h2>
+        <p class="subtitle">
+          The model does not “fix” delays by itself. It helps teams focus on the trips that are more likely to run late.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>What the model gives you</h3>
+              <ul>
+                <li>For each stop event, the model outputs a <strong>risk score</strong> (0 to 1).</li>
+                <li>Higher score = <strong>more likely to be delayed</strong>.</li>
+                <li>I use it to create a short <strong>priority list</strong> for dispatch and planning.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Three simple ways to use it</h3>
+              <ul>
+                <li><strong>Monitor:</strong> keep an eye on high-risk trips (especially during peak hours).</li>
+                <li><strong>Prepare:</strong> add small buffer or extra attention on risky routes/stops.</li>
+                <li><strong>Communicate:</strong> if risk is high, send earlier passenger updates (when possible).</li>
+              </ul>
+            </div>
+
+            <div class="small-note push-bottom">
+              Simple idea: use the model to decide “where to look first,” not “who to blame.”
+            </div>
+          </div>
+
+          <!-- Right -->
+          <div class="col-grid">
+            <div class="card">
+              <h3>Traffic-light alerts (easy version)</h3>
+
+              <div style="display:grid; gap:10px;">
+                <div style="display:grid; grid-template-columns: 120px 1fr; gap:10px; align-items:start;
+                            padding:10px 12px; border-radius:14px; background: rgba(246,247,251,0.06);">
+                  <div class="mono" style="font-weight:700;">Green</div>
+                  <div>
+                    <div><strong>Low risk</strong> → do nothing.</div>
+                    <div class="small-note">Avoid alert fatigue.</div>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 120px 1fr; gap:10px; align-items:start;
+                            padding:10px 12px; border-radius:14px; background: rgba(56,189,248,0.08);">
+                  <div class="mono" style="font-weight:700;">Yellow</div>
+                  <div>
+                    <div><strong>Medium risk</strong> → watchlist.</div>
+                    <div class="small-note">Good for awareness.</div>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 120px 1fr; gap:10px; align-items:start;
+                            padding:10px 12px; border-radius:14px; background: rgba(225,29,72,0.10);">
+                  <div class="mono" style="font-weight:700;">Red</div>
+                  <div>
+                    <div><strong>High risk</strong> → act early.</div>
+                    <div class="small-note">Dispatch attention + optional message.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="small-note" style="margin-top:10px;">
+                I can tune the cutoffs later (fewer false alarms vs fewer missed delays).
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Rollout plan (3 steps)</h3>
+              <ol style="margin:0; padding-left: 18px;">
+                <li><strong>Shadow mode:</strong> show alerts, but don’t act yet. Check daily if they make sense.</li>
+                <li><strong>Small pilot:</strong> enable on a few routes/time bands first.</li>
+                <li><strong>Scale:</strong> expand after the team trusts the alerts.</li>
+              </ol>
+              <div class="small-note" style="margin-top:10px;">
+                Track: number of alerts, how many were correct, and whether performance changes over time.
+              </div>
+            </div>
+
+            <aside class="speaker-notes">
+              <strong>Speaker notes (≈50–70s):</strong>
+              This slide is about how to use the model in real life. The model outputs a risk score for each stop event. 
+              A higher score means the bus is more likely to be delayed. 
+              The simplest way to use this is as a daily priority list: where should dispatch look first, and where should planning focus first. 
+              I present it as traffic lights because it is easy to understand: 
+              Green means low risk and no action. Yellow means watchlist. Red means high risk and I act early, for example by monitoring more closely or sending an earlier passenger update. 
+              The cutoffs can be tuned depending on what the operator prefers: fewer false alarms or fewer missed delays. 
+              For rollout, I start in shadow mode, then a small pilot, then scale once the alerts are trusted.
+              The model is a risk list, but real surprises like accidents or breakdowns need real-time alerts and human judgement.
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 20 / 22</div>
+      </div>
+    </section>
+
+
+    <!-- Slide 21: Limitations & Next steps (no overflow) -->
+    <section class="slide" data-slide="21"
+      style="background:
+        radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+        radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+        var(--bg);">
+
+      <div class="slide-inner slide-inner--top">
+        <div class="badge"><span class="dot"></span> Limitations • Risks • Next steps</div>
+
+        <h2 class="title">Limitations and next steps</h2>
+        <p class="subtitle">
+          The model is useful, but some delays are hard to predict without real-time information.
+        </p>
+
+        <div class="layout-2col">
+          <!-- Left column -->
+          <div class="col-stack">
+            <div class="card">
+              <h3>Main limitations (today)</h3>
+              <ul>
+                <li><strong>No real-time signals:</strong> I don’t have live traffic, incidents, or bus telemetry (GPS speed, headway).</li>
+                <li><strong>Short time window:</strong> July 25 → Sept 16, 2025 (about 7–8 weeks), so I don’t capture full seasons.</li>
+                <li><strong>Unexpected events:</strong> accidents, road works, and vehicle issues are hard to predict from static data.</li>
+                <li><strong>Stops/routes change:</strong> ID patterns may not transfer well to new or changed routes.</li>
+                <li><strong>Not causality:</strong> features help prediction, but they don’t prove the real cause.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>What I do about it (practical)</h3>
+              <ul>
+                <li><strong>Time-based testing:</strong> train on earlier weeks, test on later weeks.</li>
+                <li><strong>Monitoring:</strong> track precision/recall and drift by route/time band.</li>
+                <li><strong>Retrain:</strong> update the model regularly when patterns change.</li>
+              </ul>
+            </div>
+
+            <div class="small-note">
+              Takeaway: this is a decision helper that needs monitoring, not a one-time model.
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-stack">
+            <div class="card">
+              <h3>Best data to add next</h3>
+              <ul>
+                <li><strong>Traffic + incidents:</strong> congestion, road works, accidents, major events.</li>
+                <li><strong>Bus telemetry (AVL/GPS):</strong> speed, dwell time, headway, bunching signals.</li>
+                <li><strong>Network history:</strong> what happened at previous stops on the same trip/line.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Simple go-live checklist</h3>
+              <ul>
+                <li><strong>Alert volume:</strong> keep alerts manageable (avoid alert fatigue).</li>
+                <li><strong>Quality:</strong> weekly precision/recall at the chosen threshold.</li>
+                <li><strong>Stability:</strong> watch for sudden changes by route/time band.</li>
+              </ul>
+            </div>
+
+            <aside class="speaker-notes">
+              <strong>Speaker notes (≈45–60s):</strong>
+              The key message is that some delays follow patterns, but many are caused by sudden events. Because I don’t use real-time traffic, incidents, or bus telemetry, the model cannot perfectly predict surprises like accidents or breakdowns. Also, our data covers about 7 to 8 weeks, so I don’t see full seasonality. The practical fix is deployment discipline: test in time order, monitor metrics by route and time band, and retrain when patterns shift. The best improvement would be adding real-time traffic and GPS/AVL signals.
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 21 / 22</div>
+      </div>
+    </section>
+
+    <!-- Slide 22: End -->
+    <section class="slide" data-slide="22" style="background:
+      radial-gradient(1000px 520px at 12% 10%, rgba(56,189,248,0.14), transparent 58%),
+      radial-gradient(1000px 520px at 88% 16%, rgba(225,29,72,0.12), transparent 60%),
+      var(--bg);">
+
+      <div class="slide-inner" style="align-content:center; justify-items:center; text-align:center;">
+        <div class="badge" style="margin: 0 auto;">
+          <span class="dot"></span>
+          <span>End</span>
+        </div>
+
+        <h2 class="title" style="margin-top: 8vh; text-align:center;">Thank you</h2>
+        <p class="subtitle" style="text-align:center; max-width: 70ch;">
+          This concludes my presentation.
+        </p>
+
+        <aside class="speaker-notes">
+          <strong>Speaker notes (≈5–10s):</strong>
+          This concludes my presentation. Thank you.
+        </aside>
+      </div>
+
+      <div class="footer">
+        <div class="line"></div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="line">Slide 22 / 22</div>
+      </div>
+    </section>
+
+
+
+
+    <!-- Small Q&A styling (safe to keep globally if you want) -->
+    <style>
+      .qa { display:grid; gap: 10px; }
+      .qa-q { font-weight: 800; margin-top: 4px; }
+      .qa-a { color: rgba(246,247,251,0.86); line-height: 1.35; }
+    </style>
+
+  </div>
+
+  <script>
+    // Keyboard navigation: scroll to next/prev slide
+    (function () {
+      const deck = document.getElementById('deck');
+      const slides = Array.from(deck.querySelectorAll('.slide'));
+      const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+      function currentIndex(){
+        const y = deck.scrollTop;
+        let idx = 0;
+        for (let i = 0; i < slides.length; i++){
+          const top = slides[i].offsetTop;
+          if (y >= top - 10) idx = i;
+        }
+        return idx;
+      }
+
+      function go(delta){
+        const idx = currentIndex();
+        const next = clamp(idx + delta, 0, slides.length - 1);
+        slides[next].scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(1); }
+        if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+        if (e.key === 'Home') { e.preventDefault(); slides[0].scrollIntoView({behavior:'smooth'}); }
+        if (e.key === 'End') { e.preventDefault(); slides[slides.length-1].scrollIntoView({behavior:'smooth'}); }
+        if (e.key === 'n' || e.key === 'N') { document.body.classList.toggle('show-notes'); }
+      });
+    })();
+  </script>
+
+  <script>
+  (() => {
+    const slides = [...document.querySelectorAll(".deck .slide")];
+    const total = slides.length;
+
+    slides.forEach((slide, i) => {
+      const footer = slide.querySelector(".footer");
+      if (!footer) return;
+
+      // Right-side footer line: "Slide X / Y"
+      const right = footer.querySelector(".line:last-child");
+      if (right) right.textContent = `Slide ${i + 1} / ${total}`;
+
+      // Progress bar fill
+      footer.style.setProperty("--progress", `${((i + 1) / total) * 100}%`);
+    });
+  })();
+  </script>
+
+</body>
+</html>

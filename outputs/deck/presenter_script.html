@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Presenter Script (Readable) — Bus Delays Luxembourg</title>
+<style>
+    :root {
+      --bg: #ffffff;
+      --fg: #0b1220;
+      --muted: rgba(11,18,32,0.72);
+      --card: rgba(11,18,32,0.04);
+      --border: rgba(11,18,32,0.12);
+      --accent: #2563eb;
+      --accent2: #e11d48;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1020px;
+      margin: 0 auto;
+      padding: 26px 18px 72px;
+    }
+    header.top {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 16px;
+      background: linear-gradient(120deg, rgba(37,99,235,0.06), rgba(225,29,72,0.06));
+    }
+    h1 {
+      margin: 0 0 6px 0;
+      font-size: 2.05rem;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .toc {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    .toc h2 {
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+    }
+    .toc ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    .toc a {
+      color: var(--fg);
+      text-decoration: none;
+    }
+    .toc a:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+    }
+    .toc .n { font-weight: 800; margin-right: 6px; }
+    .toc .t { color: rgba(11,18,32,0.86); }
+
+    section.slide {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .head {
+      padding: 12px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .head h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: -0.01em;
+    }
+    .badge {
+      display: inline-flex;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.7);
+      color: rgba(11,18,32,0.78);
+      font-size: 0.92rem;
+    }
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .goal {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(37,99,235,0.18);
+      background: rgba(37,99,235,0.05);
+      border-radius: 12px;
+      font-weight: 650;
+    }
+    .body {
+      padding: 14px 14px 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .talk p {
+      margin: 0 0 10px 0;
+      font-size: 1.03rem;
+    }
+    .nums {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.9);
+    }
+    .nums-title {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .nums ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.98rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0;
+    }
+
+    h2.qa-title {
+      margin: 18px 0 8px;
+      font-size: 1.55rem;
+      letter-spacing: -0.02em;
+    }
+    p.note {
+      margin: 0 0 12px 0;
+      color: var(--muted);
+    }
+    section.qa {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+    section.qa h3 {
+      margin: 0;
+      padding: 12px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      font-size: 1.05rem;
+    }
+    .qa-grid {
+      padding: 12px 14px 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .qa-item {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.9);
+    }
+    .q { font-weight: 800; margin-bottom: 4px; }
+    .a { color: rgba(11,18,32,0.88); }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media print {
+      section.slide, section.qa { break-inside: avoid; }
+      .toc a { text-decoration: none; }
+    }
+  
+/* =========================================================
+   Sticky navigation + quick jump (Presenter Script v3)
+   ========================================================= */
+.app{
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
+}
+.sidebar{
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: 16px 14px 18px;
+  border-right: 1px solid var(--border);
+  background: #fff;
+}
+.sidebar .side-title{
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+.sidebar .side-sub{
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.sidebar .side-controls{
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.sidebar input[type="search"]{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  outline: none;
+  font-size: 0.98rem;
+}
+.sidebar input[type="search"]:focus{
+  border-color: rgba(37,99,235,0.45);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.10);
+}
+.sidebar .side-actions{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.sidebar button{
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(11,18,32,0.03);
+  cursor: pointer;
+  font-weight: 750;
+}
+.sidebar button:hover{
+  background: rgba(37,99,235,0.06);
+  border-color: rgba(37,99,235,0.30);
+}
+.sidebar .now{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(225,29,72,0.22);
+  background: rgba(225,29,72,0.05);
+  font-weight: 800;
+}
+.sidebar .toc{
+  margin-top: 12px;
+  border: none;
+  padding: 0;
+}
+.sidebar .toc h2{
+  font-size: 1.0rem;
+  margin: 0 0 6px 0;
+}
+.sidebar .toc ul{
+  padding-left: 0;
+  list-style: none;
+  gap: 4px;
+}
+.sidebar .toc li{
+  margin: 0;
+}
+.sidebar .toc a{
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.sidebar .toc a:hover{
+  background: rgba(37,99,235,0.05);
+  border-color: rgba(37,99,235,0.18);
+}
+.sidebar .toc a.active{
+  background: rgba(37,99,235,0.09);
+  border-color: rgba(37,99,235,0.28);
+}
+.sidebar .toc .n{
+  min-width: 74px;
+}
+.content{
+  overflow: auto;
+}
+.content .wrap{
+  max-width: 980px;
+}
+.kbd-hint{
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; }
+  .sidebar{ position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .content .wrap{ max-width: 980px; }
+}
+@media print{
+  .sidebar{ display:none !important; }
+  .app{ display:block; }
+  .content{ overflow: visible; }
+}
+
+
+/* Scroll helper so 'jump to slide' lands nicely */
+section.slide{ scroll-margin-top: 12px; }
+
+/* =========================================================
+   Timers (Presenter Script)
+   ========================================================= */
+.head h2{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.h-title{ flex: 1; min-width: 0; }
+.time-badge{
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(11,18,32,0.03);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.time-badge.ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); }
+.time-badge.warn{ border-color: rgba(245,158,11,0.40); background: rgba(245,158,11,0.10); }
+.time-badge.over{ border-color: rgba(239,68,68,0.40); background: rgba(239,68,68,0.10); }
+
+.sidebar .toc a{
+  justify-content: space-between;
+}
+.sidebar .toc a .toc-time{
+  margin-left: auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(11,18,32,0.10);
+  background: rgba(11,18,32,0.03);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+.sidebar .toc a .toc-time.ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); }
+.sidebar .toc a .toc-time.warn{ border-color: rgba(245,158,11,0.40); background: rgba(245,158,11,0.10); }
+.sidebar .toc a .toc-time.over{ border-color: rgba(239,68,68,0.40); background: rgba(239,68,68,0.10); }
+
+.timer-panel{
+  margin-top: 12px;
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(11,18,32,0.02);
+}
+.timer-title{
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  font-size: 1.0rem;
+}
+.timer-grid{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.timer-box{
+  padding: 10px 10px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(11,18,32,0.10);
+  background: #fff;
+}
+.timer-label{
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+.timer-value{
+  margin-top: 4px;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+.timer-sub{
+  margin-top: 2px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.timer-actions{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.timer-actions button{
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(11,18,32,0.03);
+  cursor: pointer;
+  font-weight: 850;
+}
+.timer-actions button:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.timer-actions button:hover:enabled{
+  background: rgba(37,99,235,0.06);
+  border-color: rgba(37,99,235,0.30);
+}
+.timer-hint{
+  margin-top: 8px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+
+/* =========================================================
+   Sidebar layout improvements
+   ========================================================= */
+
+/* Adjustable sidebar width */
+:root{ --sidebar-w: 380px; }
+.app{ grid-template-columns: var(--sidebar-w) 1fr; }
+
+/* Sidebar becomes a fixed column: top + scroll + bottom */
+.sidebar{
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sidebar-top{ flex: 0 0 auto; }
+.sidebar-scroll{
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 6px;
+}
+.sidebar-bottom{ flex: 0 0 auto; }
+
+/* Make TOC items layout stable (text left, time chip right) */
+.sidebar .toc a{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.sidebar .toc a:hover{
+  background: rgba(37,99,235,0.06);
+  border-color: rgba(37,99,235,0.18);
+}
+
+/* Timer panel width control */
+.timer-width{
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(11,18,32,0.12);
+}
+.timer-width-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.timer-width-label{
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+#sidebarWidth{ width: 100%; }
+
+/* =========================================================
+   Click-to-focus slide highlight
+   ========================================================= */
+section.slide{
+  cursor: pointer;
+  transition: box-shadow 120ms ease, outline-color 120ms ease, transform 120ms ease;
+}
+section.slide:hover{
+  box-shadow: 0 10px 30px rgba(11,18,32,0.08);
+}
+section.slide.presenting{
+  outline: 3px solid rgba(37,99,235,0.35);
+  box-shadow: 0 0 0 8px rgba(37,99,235,0.10);
+}
+
+/* =========================================================
+   Numbers to mention: show as one line (not a vertical list)
+   ========================================================= */
+.nums ul{
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.nums li{ margin: 0; }
+.nums li::after{
+  content: "•";
+  margin-left: 10px;
+  color: rgba(11,18,32,0.35);
+}
+.nums li:last-child::after{ content: ""; margin-left: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+<aside aria-label="Slide navigation" class="sidebar"><div class="sidebar-top"><div class="side-title">Presenter Script</div><div class="side-sub">Quick navigation while you practice</div><div class="side-controls">
+<input aria-label="Search slides" id="tocSearch" placeholder="Search slides..." type="search"/>
+<div class="side-actions">
+<button id="prevBtn" type="button">Prev</button>
+<button id="nextBtn" type="button">Next</button>
+</div>
+</div><div aria-label="Practice timers" class="timer-panel">
+<div class="timer-title">Practice timers</div>
+<div class="timer-grid">
+<div class="timer-box">
+<div class="timer-label">Overall</div>
+<div class="timer-value mono" id="tOverall">00:00</div>
+<div class="timer-sub mono" id="tOverallPlan">Plan: 20:00</div>
+</div>
+<div class="timer-box">
+<div class="timer-label">This slide</div>
+<div class="timer-value mono" id="tSlide">00:00</div>
+<div class="timer-sub mono" id="tSlidePlan">Plan: 00:00</div>
+</div>
+</div>
+<div class="timer-actions">
+<button id="btnStart" type="button">Start</button>
+<button disabled="" id="btnPause" type="button">Pause</button>
+<button id="btnRestart" type="button">Restart</button>
+</div>
+<div class="timer-hint">Green = on time • Red = over time</div>
+
+<div class="timer-width">
+<div class="timer-width-row">
+<div class="timer-width-label">Sidebar width</div>
+<div class="mono" id="sidebarWidthVal">380px</div>
+</div>
+<input aria-label="Sidebar width" id="sidebarWidth" max="520" min="320" step="10" type="range" value="380"/>
+</div>
+</div><div class="now" id="nowLabel">Now: —</div></div><div class="sidebar-scroll"><nav aria-label="Table of contents" class="toc">
+<h2>Slides</h2>
+<ul><li><a href="#s1"><span class="n">Slide 1</span> <span class="t">Predicting Bus Delays in Luxembourg</span><span class="toc-time mono" data-slide="1">00:00 / 00:00</span></a></li>
+<li><a href="#s2"><span class="n">Slide 2</span> <span class="t">Agenda</span><span class="toc-time mono" data-slide="2">00:00 / 00:00</span></a></li>
+<li><a href="#s3"><span class="n">Slide 3</span> <span class="t">Why bus delays matter (and what we are trying to solve)</span><span class="toc-time mono" data-slide="3">00:00 / 00:00</span></a></li>
+<li><a href="#s4"><span class="n">Slide 4</span> <span class="t">Data source and workflow</span><span class="toc-time mono" data-slide="4">00:00 / 00:00</span></a></li>
+<li><a href="#s5"><span class="n">Slide 5</span> <span class="t">Dataset schema and scale</span><span class="toc-time mono" data-slide="5">00:00 / 00:00</span></a></li>
+<li><a href="#s6"><span class="n">Slide 6</span> <span class="t">What we predict: delayed vs on-time (and how common each one is)</span><span class="toc-time mono" data-slide="6">00:00 / 00:00</span></a></li>
+<li><a href="#s7"><span class="n">Slide 7</span> <span class="t">Most delays are small, but a few are very large</span><span class="toc-time mono" data-slide="7">00:00 / 00:00</span></a></li>
+<li><a href="#s8"><span class="n">Slide 8</span> <span class="t">Some hours have more delays than others</span><span class="toc-time mono" data-slide="8">00:00 / 00:00</span></a></li>
+<li><a href="#s9"><span class="n">Slide 9</span> <span class="t">Weekends are slightly better, and evening peak is the riskiest band</span><span class="toc-time mono" data-slide="9">00:00 / 00:00</span></a></li>
+<li><a href="#s10"><span class="n">Slide 10</span> <span class="t">Some routes have more delays than others</span><span class="toc-time mono" data-slide="10">00:00 / 00:00</span></a></li>
+<li><a href="#s11"><span class="n">Slide 11</span> <span class="t">Some stops are much “more likely to be delayed” than others</span><span class="toc-time mono" data-slide="11">00:00 / 00:00</span></a></li>
+<li><a href="#s12"><span class="n">Slide 12</span> <span class="t">Delay rates vary by operator — but this is not a “scoreboard”</span><span class="toc-time mono" data-slide="12">00:00 / 00:00</span></a></li>
+<li><a href="#s13"><span class="n">Slide 13</span> <span class="t">When delays happen, some time bands have bigger delays</span><span class="toc-time mono" data-slide="13">00:00 / 00:00</span></a></li>
+<li><a href="#s14"><span class="n">Slide 14</span> <span class="t">Correlation heatmap: what moves together (and a quick leakage reminder)</span><span class="toc-time mono" data-slide="14">00:00 / 00:00</span></a></li>
+<li><a href="#s15"><span class="n">Slide 15</span> <span class="t">Modeling setup: what we use as inputs (and how we test fairly)</span><span class="toc-time mono" data-slide="15">00:00 / 00:00</span></a></li>
+<li><a href="#s16"><span class="n">Slide 16</span> <span class="t">Which model performs best for delay alerts?</span><span class="toc-time mono" data-slide="16">00:00 / 00:00</span></a></li>
+<li><a href="#s17"><span class="n">Slide 17</span> <span class="t">Turning model probability into a clear “Delay alert”</span><span class="toc-time mono" data-slide="17">00:00 / 00:00</span></a></li>
+<li><a href="#s18"><span class="n">Slide 18</span> <span class="t">Do the predictions separate delayed vs on-time well?</span><span class="toc-time mono" data-slide="18">00:00 / 00:00</span></a></li>
+<li><a href="#s19"><span class="n">Slide 19</span> <span class="t">What information does the model rely on most?</span><span class="toc-time mono" data-slide="19">00:00 / 00:00</span></a></li>
+<li><a href="#s20"><span class="n">Slide 20</span> <span class="t">Recommendation: use the model as a “risk list” for daily operations</span><span class="toc-time mono" data-slide="20">00:00 / 00:00</span></a></li>
+<li><a href="#s21"><span class="n">Slide 21</span> <span class="t">Limitations and next steps</span><span class="toc-time mono" data-slide="21">00:00 / 00:00</span></a></li>
+</ul>
+</nav></div><div class="sidebar-bottom"><div class="kbd-hint">Shortcuts: <span class="mono">J/K</span> or <span class="mono">↑/↓</span> to move, <span class="mono">/</span> to search.</div></div></aside>
+<main class="content">
+<div class="wrap">
+<header class="top">
+<h1>Presenter Script (Readable)</h1>
+<div class="meta">
+        Built from the deck’s speaker notes, but reformatted into readable paragraphs (no broken bullet fragments).
+      </div>
+<div class="meta" style="margin-top:6px;">
+        Tip: You can print to PDF from your browser (File → Print).
+      </div>
+</header>
+<!-- TOC_MOVED_TO_SIDEBAR -->
+<section class="slide" id="s1">
+<div class="head">
+<h2>
+<span class="h-title">Slide 1: Predicting Bus Delays in Luxembourg</span>
+<span class="time-badge mono" data-slide="1" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Operations support • Delayed = ≥ 1 minute late</div>
+<div class="subtitle">Find when and where delays are most likely, so operators can adjust service and improve reliability.</div>
+<div class="goal">Explain: Find when and where delays are most likely, so operators can adjust service and improve reliability.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Hi, I’m Marcelo Rech. In this project, I predict whether a bus stop event will be Delayed or On-time.<br/>I label an event as delayed when the bus is at least 1 minute late. The goal is practical: help operations teams spot high-risk situations—like certain times, routes, or conditions— so they can make small changes that improve reliability for passengers.<br/>I’ll show the data, the main patterns I found, the model results, and the key recommendations.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s2">
+<div class="head">
+<h2>
+<span class="h-title">Slide 2: Agenda</span>
+<span class="time-badge mono" data-slide="2" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Plan • What you will see • Main score: F1</div>
+<div class="subtitle">A simple path: problem → data → patterns → model → what to do with it.</div>
+<div class="goal">Explain: A simple path: problem → data → patterns → model → what to do with it.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This is the plan for the presentation. First, I explain the problem and the goal: support operations by spotting when delays are more likely.<br/>Then I quickly describe the data and the basic checks to confirm it is reliable enough to use. After that, I show the main patterns—like which hours, routes, and conditions have more delays.<br/>Next, I explain the model and how I evaluate it. My main score is F1 because it balances precision and recall.<br/>If you only remember one thing from this slide, it’s this: we go from the real problem to a model that leads to practical actions.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s3">
+<div class="head">
+<h2>
+<span class="h-title">Slide 3: Why bus delays matter (and what we are trying to solve)</span>
+<span class="time-badge mono" data-slide="3" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Problem • Impact • Objective</div>
+<div class="subtitle">Even small delays can break connections and reduce trust. The goal is to support operations with an early warning signal.</div>
+<div class="goal">Explain: Even small delays can break connections and reduce trust. The goal is to support operations with an early warning signal.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>On this slide I explain the “why”. Bus delays are not only a number—they affect real trips.<br/>Even a small delay can break a connection or make passengers feel the service is not reliable. For operations, the challenge is timing: it’s hard to act early if you only notice delays after they spread.<br/>So the goal of this project is simple: predict “Delayed” versus “On-time” for each stop event. I define delayed as at least one minute late.<br/>The model gives a probability, which we can treat like a risk score. That is more useful than a strict yes/no.<br/>For success, I use F1 as the main score because it balances two things: catching real delays and avoiding too many false alerts. I also report precision, recall, and ROC AUC for context.<br/>The main point here is: the model should lead to practical actions, not just a metric.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s4">
+<div class="head">
+<h2>
+<span class="h-title">Slide 4: Data source and workflow</span>
+<span class="time-badge mono" data-slide="4" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Data • Where it comes from • How we prepared it</div>
+<div class="subtitle">One cleaned dataset is used for both analysis and modeling, so the numbers always match.</div>
+<div class="goal">Explain: One cleaned dataset is used for both analysis and modeling, so the numbers always match.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide explains where the data comes from and how the project is organized. I start with stop-event records, which contain scheduled and actual times.<br/>From that, I calculate the delay in minutes. I also add a small amount of extra context, like weather, because conditions can affect traffic and travel time.<br/>The most important point is consistency: I keep one cleaned dataset and use it everywhere. That way, the patterns I show in EDA are based on the same data that the model learns from.<br/>In practice, my workflow is: extract the data and export a CSV, clean it and check quality, explore the main patterns, create features, and then train models. I evaluate with F1 as the main score, and I also show precision, recall, and ROC AUC.<br/>The main point here is: every result in the deck comes from a clear and repeatable process.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s5">
+<div class="head">
+<h2>
+<span class="h-title">Slide 5: Dataset schema and scale</span>
+<span class="time-badge mono" data-slide="5" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Dataset overview • One row = one stop event</div>
+<div class="subtitle">Each row is one bus stop event with a scheduled time and an observed time. With millions of rows, we can spot patterns and train models with confidence.</div>
+<div class="goal">Explain: Each row is one bus stop event with a scheduled time and an observed time. With millions of rows, we can spot patterns and train models with confidence.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This is the base dataset used for the whole project. Each row represents one stop event: we have the planned time and the real observed time.<br/>The delay in minutes is simply the difference between those two timestamps. The dataset is large — over 7 million stop events — which is great because it makes the patterns more reliable.<br/>In terms of data quality, almost every column is complete. The only meaningful missing field is the operator name, and that happens in about 6 thousand rows, which is less than 0.1%.<br/>I replaced those missing operator values with “Unknown” so we keep every observation. From an operations point of view, this schema is practical because it lets us slice delay risk by time, by route/stop, and by operator.<br/>And for modeling, we simplify the problem into a clear label: delayed if it is at least 1 minute late, otherwise on-time. All records were collected between July 25 and September 16, 2025, so the analysis reflects about 7 to 8 weeks of operations.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">0.1</span></li><li><span class="mono">7</span></li><li><span class="mono">6</span></li><li><span class="mono">25</span></li><li><span class="mono">16</span></li><li><span class="mono">2025</span></li><li><span class="mono">8</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s6">
+<div class="head">
+<h2>
+<span class="h-title">Slide 6: What we predict: delayed vs on-time (and how common each one is)</span>
+<span class="time-badge mono" data-slide="6" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Target • Class balance • Why F1 matters</div>
+<div class="subtitle">For each stop event, the model predicts one of two outcomes: Delayed or On-time .</div>
+<div class="goal">Explain: For each stop event, the model predicts one of two outcomes: Delayed or On-time .</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>On this slide I lock in the exact definition of the target. For every stop event, I label it as Delayed if it is 1 minute late or more.<br/>Otherwise, it is On-time. The donut chart shows the mix in the dataset: about 64% on-time and 36% delayed.<br/>That means delays are not rare, but on-time is still the bigger group. This is important for evaluation.<br/>If I only used accuracy, a model could look “good” just by predicting on-time too often. Instead, I use F1 as the main metric because it balances two needs: catching real delays and not creating too many false alerts.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">64</span></li><li><span class="mono">36</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s7">
+<div class="head">
+<h2>
+<span class="h-title">Slide 7: Most delays are small, but a few are very large</span>
+<span class="time-badge mono" data-slide="7" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Data quality • Delay sizes • Rare extreme events</div>
+<div class="subtitle">Before modeling, I check missing values and I look at the delay distribution to understand what “normal” looks like.</div>
+<div class="goal">Explain: Before modeling, I check missing values and I look at the delay distribution to understand what “normal” looks like.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Before modeling, I do two quick checks: missing values and the size of delays. First, missing values are very small, so the dataset is reliable enough to work with.<br/>Second, I want to explain what a “normal” delay looks like. In the top chart, most delays are very close to zero.<br/>The two dashed lines are simple cutoffs: P95 = 5 minutes means 95 out of 100 delays are 5 minutes or less. P99 = 9 minutes means 99 out of 100 delays are 9 minutes or less.<br/>So the main takeaway is: almost all delays are under 10 minutes. The bottom chart shows the rare cases above 15 minutes.<br/>These are uncommon, but they matter because they usually come from disruptions.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">5</span></li><li><span class="mono">95</span></li><li><span class="mono">100</span></li><li><span class="mono">9</span></li><li><span class="mono">99</span></li><li><span class="mono">10</span></li><li><span class="mono">15</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s8">
+<div class="head">
+<h2>
+<span class="h-title">Slide 8: Some hours have more delays than others</span>
+<span class="time-badge mono" data-slide="8" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Time of day • When delays happen more</div>
+<div class="subtitle">This chart shows the share of stop events that are delayed for each planned hour.</div>
+<div class="goal">Explain: This chart shows the share of stop events that are delayed for each planned hour.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Here I’m asking a simple question: does delay risk change during the day? The y-axis is the percentage of stop events that are delayed, using the same rule as before: Delayed means 1 minute late or more.<br/>The dashed line is the baseline — the overall average delayed share. You can see that some hours are clearly above baseline.<br/>The chart highlights the top hours with red markers. These tend to happen around the morning commute and late afternoon.<br/>The key point is simple: instead of treating every hour the same, operations can focus monitoring and small actions during these higher-risk windows — for example, adding a bit of schedule buffer, closer dispatch attention, or faster response when delays start to grow.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s9">
+<div class="head">
+<h2>
+<span class="h-title">Slide 9: Weekends are slightly better, and evening peak is the riskiest band</span>
+<span class="time-badge mono" data-slide="9" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Weekday vs weekend • Time bands</div>
+<div class="subtitle">Same metric as before: delayed share (Delayed = ≥ 1 minute). Dashed line = overall baseline.</div>
+<div class="goal">Explain: Same metric as before: delayed share (Delayed = ≥ 1 minute). Dashed line = overall baseline.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Here I group the same delay metric in two simple ways: by weekday and by time band. On the weekday chart, the pattern is pretty stable.<br/>Most weekdays sit close to the baseline. The weekend is a bit better, and Sunday is the lowest.<br/>The time-band chart shows a clearer difference. Night has the lowest delayed share, while midday and especially evening peak are higher than the baseline.<br/>The key point is simple: weekday changes are small, but time-of-day changes are larger. So operationally, it makes sense to focus extra attention during the evening peak.<br/>And for modeling, weekday and time band are easy features that capture routine behavior.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s10">
+<div class="head">
+<h2>
+<span class="h-title">Slide 10: Some routes have more delays than others</span>
+<span class="time-badge mono" data-slide="10" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Routes • Where delays happen more</div>
+<div class="subtitle">We rank routes by delayed share (Delayed = ≥ 1 minute). We only keep routes with many events so the ranking is fair.</div>
+<div class="goal">Explain: We rank routes by delayed share (Delayed = ≥ 1 minute). We only keep routes with many events so the ranking is fair.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>After looking at time patterns, I ask a new question: are some routes worse than others? These two charts rank routes by the percent of stop events that are delayed.<br/>The dashed line is the overall baseline across the system. The top chart shows the worst routes — routes that are clearly above the baseline.<br/>The bottom chart shows the best routes — a helpful reference for what good performance looks like. To keep this fair, I only include routes with many events.<br/>The key point is simple: if we want quick improvements, the worst routes are a good place to start. And in the next slide, I zoom in further to see which stops are the main bottlenecks.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s11">
+<div class="head">
+<h2>
+<span class="h-title">Slide 11: Some stops are much “more likely to be delayed” than others</span>
+<span class="time-badge mono" data-slide="11" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Stop hotspots • Where delays happen most</div>
+<div class="subtitle">We rank stops by delayed share (Delayed = ≥ 1 minute). We only keep stops with many events so the ranking is fair.</div>
+<div class="goal">Explain: We rank stops by delayed share (Delayed = ≥ 1 minute). We only keep stops with many events so the ranking is fair.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Now that we understand time patterns, I zoom in on locations. This slide ranks stops by the share of events that are delayed.<br/>The top chart shows the worst stops — the ones with delay rates well above the baseline. The bottom chart shows the best stops — a useful reference for what good looks like.<br/>I only include stops with many events, so we don’t get “top 10” results caused by a small sample. The main takeaway is simple: a small set of stops is a good place to start operational work.<br/>These stops can be checked for typical causes like intersections, traffic signals, high boarding time, or local congestion. This creates a short list of places where small fixes can help many trips.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">10</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s12">
+<div class="head">
+<h2>
+<span class="h-title">Slide 12: Delay rates vary by operator — but this is not a “scoreboard”</span>
+<span class="time-badge mono" data-slide="12" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Operator view • Useful signal (with caution)</div>
+<div class="subtitle">This is helpful for monitoring. But operators run different routes and areas, so we must compare carefully.</div>
+<div class="goal">Explain: This is helpful for monitoring. But operators run different routes and areas, so we must compare carefully.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide looks at delays by operator. The dashed line is the overall baseline, so bars to the right of it mean “more delays than average”, and bars to the left mean “fewer delays than average”.<br/>The important message is: this is a useful signal, but it is not a scoreboard. Operators do not all work in the same conditions.<br/>One operator might run more peak-hour routes, or serve areas with more traffic. So if an operator is above the baseline, the next step is simple: drill down to the same routes and the same time bands, and then check if the pattern still holds.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s13">
+<div class="head">
+<h2>
+<span class="h-title">Slide 13: When delays happen, some time bands have bigger delays</span>
+<span class="time-badge mono" data-slide="13" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Severity • How big delays get</div>
+<div class="subtitle">Earlier we looked at how often delays happen. Here we look at how many minutes the delay is (only for delayed events).</div>
+<div class="goal">Explain: Earlier we looked at how often delays happen. Here we look at how many minutes the delay is (only for delayed events).</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>So far we measured “how often” delays happen. Now I look at “how big” delays get, in minutes, and only for events that are delayed (at least 1 minute).<br/>Each box shows the typical delay range for a time band, and the line inside is the middle value. The dots represent rare large delays.<br/>The main idea is that some time bands don’t just have more delays — they can also have bigger delays. This helps decide where adding a little buffer or faster dispatch response could reduce the most painful cases.<br/>The y-axis is capped so the chart stays readable.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s14">
+<div class="head">
+<h2>
+<span class="h-title">Slide 14: Correlation heatmap: what moves together (and a quick leakage reminder)</span>
+<span class="time-badge mono" data-slide="14" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">EDA • Correlation • Quick overlap check</div>
+<div class="subtitle">Correlation is a simple way to see which variables “travel together”. It helps spot overlap and obvious mistakes.</div>
+<div class="goal">Explain: Correlation is a simple way to see which variables “travel together”. It helps spot overlap and obvious mistakes.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide is a quick overlap check. Correlation tells us which variables move together.<br/>For example, the rain-related features are strongly related because they describe the same weather situation. Weekday and weekend also overlap because they are two views of the same calendar idea.<br/>The target correlations are very small here, which is realistic: delays usually come from a combination of factors, not one single number. Finally, this is also a leakage reminder: we must only use information available before the bus arrives, so we never use actual arrival time as a feature.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s15">
+<div class="head">
+<h2>
+<span class="h-title">Slide 15: Modeling setup: what we use as inputs (and how we test fairly)</span>
+<span class="time-badge mono" data-slide="15" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Modeling • What the model sees • Fair evaluation</div>
+<div class="subtitle">We predict Delayed vs On-time (Delayed ≥ 1 min) using only information known before the bus reaches the stop.</div>
+<div class="goal">Explain: We predict Delayed vs On-time (Delayed ≥ 1 min) using only information known before the bus reaches the stop.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide is my “model contract”: what the model is allowed to use and how I evaluate it. The goal is to predict delayed versus on-time using only information we would know before the stop happens.<br/>I group features into numeric values, simple yes/no flags, small categories like operator and time band, and large ID fields like stop and route. For the baseline Logistic Regression, I keep it simple and interpretable, so I exclude the large ID fields.<br/>For the tree model, I can include IDs with an encoding that also handles unknown values. To test fairly, I split the data into train and test and keep the same delayed share in both.<br/>Because delayed is about 36%, accuracy can be misleading, so I use F1 as the main metric and support it with precision, recall, and ROC AUC. Finally, Leakage is when the model accidentally sees the answer.<br/>For example, if we use the real arrival time or the delay minutes, the prediction becomes unrealistic because we would not have that information before the bus arrives.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">36</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s16">
+<div class="head">
+<h2>
+<span class="h-title">Slide 16: Which model performs best for delay alerts?</span>
+<span class="time-badge mono" data-slide="16" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Modeling • Compare models • Main score: F1</div>
+<div class="subtitle">We compare a simple baseline to stronger tree models, and we choose the one with the best balance between missed delays and false alarms.</div>
+<div class="goal">Explain: We compare a simple baseline to stronger tree models, and we choose the one with the best balance between missed delays and false alarms.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>Here I compare different models on the same test set. Because delays are only around one third of the data, accuracy can look good even when the model is not useful, so I focus on F1.<br/>F1 is a balance between precision and recall. Recall tells me how many real delays I catch, and precision tells me how many of my alerts are actually true delays.<br/>In the table, the tree models perform much better than the simple Logistic Regression baseline. The Random Forest is the best overall, and the two training options (undersampling and class_weight) are quite close.<br/>Next, I take the best model and choose a probability threshold, because operations need a clear yes/no alert.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s17">
+<div class="head">
+<h2>
+<span class="h-title">Slide 17: Turning model probability into a clear “Delay alert”</span>
+<span class="time-badge mono" data-slide="17" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Modeling • Threshold choice • Confusion matrix</div>
+<div class="subtitle">The model gives a probability. We choose a threshold to decide when to flag Delayed vs On-time (Delayed ≥ 1 min).</div>
+<div class="goal">Explain: The model gives a probability. We choose a threshold to decide when to flag Delayed vs On-time (Delayed ≥ 1 min).</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>The Random Forest does not output “Delayed” or “On-time” directly — it outputs a probability. This slide shows how we turn that probability into a clear alert by choosing a threshold.<br/>In the top chart, if we lower the threshold, we catch more real delays, but we also raise more false alarms. If we raise the threshold, we reduce false alarms, but we miss more true delays.<br/>We pick the threshold that gives the best balance using F1, which happens around 0.46 here. At this point, recall is about 0.83, meaning we catch roughly 83% of real delays, and precision is about 0.51, meaning around half of our alerts are real.<br/>The confusion matrix at the bottom turns this into counts, which is helpful for operations. And if the business later prefers fewer false alarms or fewer missed delays, we can move the threshold up or down.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">0.46</span></li><li><span class="mono">0.83</span></li><li><span class="mono">0.51</span></li><li><span class="mono">83</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s18">
+<div class="head">
+<h2>
+<span class="h-title">Slide 18: Do the predictions separate delayed vs on-time well?</span>
+<span class="time-badge mono" data-slide="18" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Modeling • Validation • ROC &amp; PR curves</div>
+<div class="subtitle">These curves check if the model is truly useful, not just at one threshold. (Delayed = ≥ 1 minute.)</div>
+<div class="goal">Explain: These curves check if the model is truly useful, not just at one threshold. (Delayed = ≥ 1 minute.)</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide checks if the model is genuinely useful, not just at one chosen threshold. The ROC curve is a simple “ranking test”: if I pick one delayed event and one on-time event, does the model usually give a higher score to the delayed one?<br/>The dashed line is random guessing, and the more the curve bends toward the top-left, the better. The PR curve is more practical here because delays are not 50/50.<br/>The dashed PR line is the baseline delay rate, so anything above it is better than guessing. PR also shows a real operational trade-off: if we push recall higher to catch more delays, precision usually drops, meaning more false alarms.<br/>That’s why we chose a threshold on the previous slide.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">50</span></li></ul>
+</div>
+</div>
+</section>
+<section class="slide" id="s19">
+<div class="head">
+<h2>
+<span class="h-title">Slide 19: What information does the model rely on most?</span>
+<span class="time-badge mono" data-slide="19" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Modeling • Interpretability • What the model uses most</div>
+<div class="subtitle">This chart ranks features by importance inside the Random Forest. Bigger bars mean the model used that feature more.</div>
+<div class="goal">Explain: This chart ranks features by importance inside the Random Forest. Bigger bars mean the model used that feature more.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide answers a simple question: what information does the model use the most to predict delays? The bars are feature importance scores from the Random Forest.<br/>A bigger bar means that feature helped the model more during prediction. This is not “cause and effect”, it is “usefulness for prediction”.<br/>In our case, demand and location signals stand out, like stop volume and stop/route identifiers. Time features also help, because delays follow daily patterns, but they are not the strongest drivers by themselves.<br/>Weather features show up, but they contribute less here. The practical message is: if we want to improve reliability, the first places to investigate are busy stops and specific routes where delay risk concentrates.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s20">
+<div class="head">
+<h2>
+<span class="h-title">Slide 20: Recommendation: use the model as a “risk list” for daily operations</span>
+<span class="time-badge mono" data-slide="20" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Recommendation • How to use the model</div>
+<div class="subtitle">The model does not “fix” delays by itself. It helps teams focus on the trips that are more likely to run late.</div>
+<div class="goal">Explain: The model does not “fix” delays by itself. It helps teams focus on the trips that are more likely to run late.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>This slide is about how to use the model in real life. The model outputs a risk score for each stop event.<br/>A higher score means the bus is more likely to be delayed. The simplest way to use this is as a daily priority list: where should dispatch look first, and where should planning focus first.<br/>I present it as traffic lights because it is easy to understand: Green means low risk and no action. Yellow means watchlist.<br/>Red means high risk and we act early, for example by monitoring more closely or sending an earlier passenger update. The cutoffs can be tuned depending on what the operator prefers: fewer false alarms or fewer missed delays.<br/>For rollout, I start in shadow mode, then a small pilot, then scale once the alerts are trusted. The model is a risk list, but real surprises like accidents or breakdowns need real-time alerts and human judgement.</p>
+</div>
+</div>
+</section>
+<section class="slide" id="s21">
+<div class="head">
+<h2>
+<span class="h-title">Slide 21: Limitations and next steps</span>
+<span class="time-badge mono" data-slide="21" title="Elapsed / planned">00:00 / 00:00</span>
+</h2>
+<div class="badge">Limitations • Risks • Next steps</div>
+<div class="subtitle">The model is useful, but some delays are hard to predict without real-time information.</div>
+<div class="goal">Explain: The model is useful, but some delays are hard to predict without real-time information.</div>
+</div>
+<div class="body">
+<div class="talk">
+<p>The key message is that some delays follow patterns, but many are caused by sudden events. Because we don’t use real-time traffic, incidents, or bus telemetry, the model cannot perfectly predict surprises like accidents or breakdowns.<br/>Also, our data covers about 7 to 8 weeks, so we don’t see full seasonality. The practical fix is deployment discipline: test in time order, monitor metrics by route and time band, and retrain when patterns shift.<br/>The best improvement would be adding real-time traffic and GPS/AVL signals.</p>
+</div>
+<div class="nums">
+<div class="nums-title">Numbers to mention</div>
+<ul><li><span class="mono">7</span></li><li><span class="mono">8</span></li></ul>
+</div>
+</div>
+</section>
+
+<div class="divider"></div>
+<h2 class="qa-title">Potential Q&amp;A (practice answers)</h2>
+<p class="note">Short answers you can say confidently. You can expand with examples from the charts if needed.</p>
+<section class="qa">
+<h3>Problem &amp; goal</h3>
+<div class="qa-grid"><div class="qa-item"><div class="q">Q: What is the goal of the project?</div><div class="a">A: Predict whether a bus stop event will be delayed, so operations can focus on the highest-risk cases.</div></div>
+<div class="qa-item"><div class="q">Q: How do you define “Delayed”?</div><div class="a">A: Delayed means at least 1 minute late (≥ 1 min).</div></div></div>
+</section>
+<section class="qa">
+<h3>Data &amp; time coverage</h3>
+<div class="qa-grid"><div class="qa-item"><div class="q">Q: What time period does the dataset cover?</div><div class="a">A: July 25, 2025 to September 16, 2025 based on collected_at (about 7–8 weeks).</div></div>
+<div class="qa-item"><div class="q">Q: Why does the time window matter?</div><div class="a">A: Because patterns can change over time. With more months or seasons, we can test stability more strongly.</div></div></div>
+</section>
+<section class="qa">
+<h3>Metrics &amp; evaluation</h3>
+<div class="qa-grid"><div class="qa-item"><div class="q">Q: Why not use accuracy as the main metric?</div><div class="a">A: Because delays are not 50/50. F1 balances catching delays (recall) and avoiding too many false alarms (precision).</div></div>
+<div class="qa-item"><div class="q">Q: What does precision vs recall mean here?</div><div class="a">A: Recall = how many real delays we catch. Precision = how many alerts are truly delays.</div></div></div>
+</section>
+<section class="qa">
+<h3>Threshold &amp; operations</h3>
+<div class="qa-grid"><div class="qa-item"><div class="q">Q: What does the threshold do?</div><div class="a">A: It turns a probability into a simple alert: above the threshold = flag as delayed.</div></div>
+<div class="qa-item"><div class="q">Q: Can the threshold be changed later?</div><div class="a">A: Yes. If the team wants fewer false alarms, raise it. If the team wants to miss fewer delays, lower it.</div></div></div>
+</section>
+<section class="qa">
+<h3>Limits &amp; next steps</h3>
+<div class="qa-grid"><div class="qa-item"><div class="q">Q: Why can’t the model predict everything?</div><div class="a">A: Many delays come from sudden events like traffic accidents or mechanical issues, and we don’t have real-time signals.</div></div>
+<div class="qa-item"><div class="q">Q: What would improve the model the most?</div><div class="a">A: Add real-time traffic/incidents and bus GPS/telemetry (speed, dwell time, headway), and evaluate across more months.</div></div></div>
+</section>
+<p class="footer-note">Source deck: index_tv.html</p>
+</div>
+</main>
+</div>
+<script>
+(function(){
+  const toc = document.querySelector('.sidebar .toc');
+  if(!toc) return;
+
+  const links = Array.from(toc.querySelectorAll('a[href^="#s"]'));
+  const linkById = new Map();
+  links.forEach(a => {
+    const id = a.getAttribute('href').slice(1);
+    linkById.set(id, a);
+  });
+
+  const sections = Array.from(document.querySelectorAll('section.slide[id]'))
+    .filter(sec => sec.id && /^s\d+$/.test(sec.id));
+
+  const nowLabel = document.getElementById('nowLabel');
+  const search = document.getElementById('tocSearch');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  // Timers UI
+  const tOverall = document.getElementById('tOverall');
+  const tSlide = document.getElementById('tSlide');
+  const tSlidePlan = document.getElementById('tSlidePlan');
+  const btnStart = document.getElementById('btnStart');
+  const btnPause = document.getElementById('btnPause');
+  const btnRestart = document.getElementById('btnRestart');
+
+  // Planned times (seconds)
+  const PLAN = {"1": 25, "2": 35, "3": 70, "4": 55, "5": 55, "6": 75, "7": 55, "8": 50, "9": 55, "10": 50, "11": 50, "12": 45, "13": 45, "14": 55, "15": 70, "16": 55, "17": 85, "18": 85, "19": 60, "20": 70, "21": 55, "22": 0};
+
+  // State
+  let idx = 0;
+  const OFFSET = 120;
+  let running = false;
+  let tickHandle = null;
+  let lastTick = 0;
+
+  let overallElapsed = 0;                 // seconds
+  const slideElapsed = new Array(sections.length).fill(0);  // seconds
+
+  function fmt(sec){
+    sec = Math.max(0, sec || 0);
+    const s = Math.floor(sec);
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    return `${mm}:${ss}`;
+  }
+
+  function planForIndex(i){
+    const m = sections[i]?.id?.match(/^s(\d+)$/);
+    const n = m ? parseInt(m[1], 10) : (i+1);
+    return PLAN[n] ?? 0;
+  }
+
+  function statusClass(elapsed, planned){
+    if(!planned) return '';
+    const r = elapsed / planned;
+    if(r <= 0.90) return 'ok';
+    if(r <= 1.05) return 'warn';
+    return 'over';
+  }
+
+  function setActive(id){
+    links.forEach(a => a.classList.remove('active'));
+    const a = linkById.get(id);
+    if(a) a.classList.add('active');
+
+    if(nowLabel){
+      const active = a || document.querySelector('.sidebar .toc a.active');
+      if(active){
+        const label = active.querySelector('.n')?.textContent?.trim() || 'Slide';
+        const title = active.querySelector('.t')?.textContent?.trim() || '';
+        nowLabel.textContent = `Now: ${label} ${title}`.trim();
+      }
+    }
+  }
+
+  function clamp(n, lo, hi){ return Math.min(Math.max(n, lo), hi); }
+
+  function syncToNow(){
+    if(!running) return;
+    const now = performance.now();
+    const dt = (now - lastTick) / 1000;
+    if(dt > 0) {
+      overallElapsed += dt;
+      slideElapsed[idx] += dt;
+    }
+    lastTick = now;
+  }
+
+  function goTo(newIdx){
+    newIdx = clamp(newIdx, 0, sections.length - 1);
+    if(newIdx !== idx) {
+      syncToNow(); // close time on previous slide
+      idx = newIdx;
+    }
+    const target = sections[idx];
+    if(target) {
+      target.scrollIntoView({behavior:'smooth', block:'start'});
+      setActive(target.id);
+      updateUI();
+    updatePresenting();
+    }
+  }
+
+  prevBtn?.addEventListener('click', () => goTo(idx - 1));
+  nextBtn?.addEventListener('click', () => goTo(idx + 1));
+
+  function filterToc(q){
+    const query = (q || '').toLowerCase().trim();
+    links.forEach(a => {
+      const txt = a.textContent.toLowerCase();
+      const show = !query || txt.includes(query);
+      a.parentElement.style.display = show ? '' : 'none';
+    });
+  }
+  search?.addEventListener('input', e => filterToc(e.target.value));
+
+  // Stable current slide detection (position-based)
+  let ticking = false;
+  function updateFromScroll(){
+    ticking = false;
+    let best = 0;
+    for(let i = 0; i < sections.length; i++) {
+      const top = sections[i].getBoundingClientRect().top;
+      if(top - OFFSET <= 0) best = i;
+      else break;
+    }
+    if(best !== idx) {
+      syncToNow();
+      idx = best;
+      setActive(sections[idx].id);
+      updateUI();
+    }
+  }
+
+  window.addEventListener('scroll', () => {
+    if(!ticking) {
+      ticking = true;
+      window.requestAnimationFrame(updateFromScroll);
+    }
+  }, {passive:true});
+
+  // Click TOC
+  links.forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.getAttribute('href').slice(1);
+      const targetIdx = sections.findIndex(s => s.id === id);
+      if(targetIdx >= 0) {
+        syncToNow();
+        idx = targetIdx;
+      }
+      setActive(id);
+      updateUI();
+    });
+  });
+
+  // Timers controls
+  function start(){
+    if(running) return;
+    running = true;
+    lastTick = performance.now();
+    btnStart.disabled = true;
+    btnPause.disabled = false;
+    tickHandle = window.setInterval(() => {
+      syncToNow();
+      updateUI();
+    }, 250);
+  }
+
+  function pause(){
+    if(!running) return;
+    syncToNow();
+    running = false;
+    btnStart.disabled = false;
+    btnPause.disabled = true;
+    if(tickHandle) window.clearInterval(tickHandle);
+    tickHandle = null;
+    updateUI();
+  }
+
+  function restart(){
+    running = false;
+    if(tickHandle) window.clearInterval(tickHandle);
+    tickHandle = null;
+    overallElapsed = 0;
+    for(let i=0;i<slideElapsed.length;i++) slideElapsed[i]=0;
+    btnStart.disabled = false;
+    btnPause.disabled = true;
+    updateUI();
+  }
+
+  btnStart?.addEventListener('click', start);
+  btnPause?.addEventListener('click', pause);
+  btnRestart?.addEventListener('click', restart);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : '';
+    const typing = (tag === 'input' || tag === 'textarea');
+
+    if(e.key === '/' && !typing) {
+      e.preventDefault();
+      search?.focus();
+      return;
+    }
+    if(typing) return;
+
+    if(e.key === ' '){
+      e.preventDefault();
+      running ? pause() : start();
+      return;
+    }
+    if(e.key === 'r' || e.key === 'R'){
+      e.preventDefault();
+      restart();
+      return;
+    }
+    if(e.key === 'j' || e.key === 'ArrowDown' || e.key === 'PageDown'){
+      e.preventDefault();
+      goTo(idx + 1);
+    }
+    if(e.key === 'k' || e.key === 'ArrowUp' || e.key === 'PageUp'){
+      e.preventDefault();
+      goTo(idx - 1);
+    }
+  });
+
+  function updateUI(){
+    if(tOverall) tOverall.textContent = fmt(overallElapsed);
+
+    // current slide plan + status
+    const planned = planForIndex(idx);
+    if(tSlide) tSlide.textContent = fmt(slideElapsed[idx]);
+    if(tSlidePlan) tSlidePlan.textContent = `Plan: ${fmt(planned)}`;
+
+    // Update title badge on each slide
+    sections.forEach((sec, i) => {
+      const nMatch = sec.id.match(/^s(\d+)$/);
+      const n = nMatch ? parseInt(nMatch[1], 10) : (i+1);
+      const badge = sec.querySelector(`.time-badge[data-slide="${n}"]`);
+      if(!badge) return;
+
+      const p = PLAN[n] ?? 0;
+      badge.textContent = p ? `${fmt(slideElapsed[i])} / ${fmt(p)}` : `${fmt(slideElapsed[i])}`;
+
+      badge.classList.remove('ok','warn','over');
+      const cls = statusClass(slideElapsed[i], p);
+      if(cls) badge.classList.add(cls);
+    });
+
+    // Update TOC chips
+    links.forEach(a => {
+      const id = a.getAttribute('href').slice(1);
+      const sIdx = sections.findIndex(s => s.id === id);
+      if(sIdx < 0) return;
+      const nMatch = id.match(/^s(\d+)$/);
+      const n = nMatch ? parseInt(nMatch[1], 10) : (sIdx+1);
+      const chip = a.querySelector(`.toc-time[data-slide="${n}"]`);
+      if(!chip) return;
+
+      const p = PLAN[n] ?? 0;
+      chip.textContent = p ? `${fmt(slideElapsed[sIdx])} / ${fmt(p)}` : `${fmt(slideElapsed[sIdx])}`;
+
+      chip.classList.remove('ok','warn','over');
+      const cls = statusClass(slideElapsed[sIdx], p);
+      if(cls) chip.classList.add(cls);
+    });
+  }
+  // ===== Sidebar width slider (stores preference) =====
+  const widthSlider = document.getElementById('sidebarWidth');
+  const widthVal = document.getElementById('sidebarWidthVal');
+  const savedW = (window.localStorage && localStorage.getItem('sidebarW')) ? localStorage.getItem('sidebarW') : null;
+
+  if(savedW){
+    document.documentElement.style.setProperty('--sidebar-w', savedW + 'px');
+    if(widthSlider) widthSlider.value = savedW;
+    if(widthVal) widthVal.textContent = savedW + 'px';
+  } else {
+    const cur = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w').trim() || '380px';
+    if(widthVal) widthVal.textContent = cur;
+  }
+
+  widthSlider?.addEventListener('input', (e) => {
+    const v = String(e.target.value || '380');
+    document.documentElement.style.setProperty('--sidebar-w', v + 'px');
+    if(widthVal) widthVal.textContent = v + 'px';
+    try { localStorage.setItem('sidebarW', v); } catch(e) {}
+  });
+
+  // ===== Slide click => focus + highlight =====
+  sections.forEach((sec, i) => {
+    sec.addEventListener('click', (e) => {
+      const t = e.target;
+      if(t && (t.closest('a') || t.closest('button') || t.closest('input') || t.closest('textarea'))) return;
+      goTo(i);
+    });
+  });
+
+  function updatePresenting(){
+    sections.forEach((sec, i) => {
+      if(i === idx) sec.classList.add('presenting');
+      else sec.classList.remove('presenting');
+    });
+    updatePresenting();
+  }
+
+
+  // Initialize active + planned times
+  if(sections.length){
+    updateFromScroll();
+    setActive(sections[idx].id);
+    updateUI();
+  }
+})();
+</script>
+</body>
+</html>
